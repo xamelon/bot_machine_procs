@@ -1,0 +1,5 @@
+{
+  "name": "units",
+  "type": "module",
+  "procs": { "namespace": "units", "src": "src", "label": "Units", "icon": "ph-ruler" }
+}

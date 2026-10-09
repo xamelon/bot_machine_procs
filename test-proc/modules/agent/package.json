@@ -1,0 +1,5 @@
+{
+  "name": "agent",
+  "type": "module",
+  "procs": { "namespace": "agent", "src": "src", "label": "Agent" }
+}

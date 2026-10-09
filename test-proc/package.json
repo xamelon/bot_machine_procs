@@ -1,0 +1,26 @@
+{
+  "name": "test-proc",
+  "module": "src/$main.ts",
+  "type": "module",
+  "private": true,
+  "procs": {
+    "prod": {
+      "procs/log": {},
+      "procs/db": {
+        "url": ":memory:"
+      },
+      "procs/migrate": {},
+      "notes": {},
+      "procs/http": {
+        "port": 0
+      }
+    },
+    "modules": {
+      "*": {},
+      "measures": {
+        "npm": "@test/measures"
+      },
+      "agent": false
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "namespace": "greeter",
+  "src": "src",
+  "label": "Greeter",
+  "icon": "ph-hand-waving",
+  "description": "A module mounted from a directory: its own namespace, its own routes, its own data files.",
+  "files": { "phrase": { "kind": "json" } }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "screen",
+  "private": true,
+  "type": "module",
+  "procs": {
+    "src": "src",
+    "label": "Screen",
+    "icon": "ph-cursor-click",
+    "description": "The screen the agent and the person look at together: open a page, click, fill, read what is on it — and walk somebody through it a step at a time. Drives the tab that already has this process open, from inside, over the event stream."
+  },
+  "devDependencies": {
+    "happy-dom": "^20.11.1",
+    "procs": "workspace:*"
+  }
+}

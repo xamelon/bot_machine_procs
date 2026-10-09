@@ -1,0 +1,19 @@
+// The trail to where you are — patients / Anna Ivanova / PHQ-9. Each crumb but
+// the last is a link; the last is where you are.
+export default function (ctx: Context, _session: Session | null, opts: {items: Array<{ label: string; href?: string; id?: string }> }): string {
+    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    const last = opts.items.length - 1;
+    // daisyUI's `breadcrumbs` draws the separators itself, so the caret icon goes.
+    return `<nav class="breadcrumbs text-base-content/60 py-0 text-base" ${ctx.fns.procs.ui.attr({ role: "breadcrumb" })}>
+  <ul>${opts.items.map((c, i) => {
+        const crumb = c.href && i < last
+            ? `<a href="${esc(c.href)}" ${ctx.fns.procs.ui.attr({ action: "open-crumb", id: c.id ?? slug(c.label) })} hx-get="${esc(c.href)}" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">${esc(c.label)}</a>`
+            : `<span class="${i === last ? "text-base-content font-semibold" : ""}">${esc(c.label)}</span>`;
+        return `<li>${crumb}</li>`;
+    }).join("")}</ul>
+</nav>`;
+}
+
+function slug(label: string): string {
+    return label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "back";
+}

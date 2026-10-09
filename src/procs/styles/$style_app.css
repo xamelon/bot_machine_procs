@@ -1,0 +1,880 @@
+/* The workspace's stylesheet, compiled by Tailwind (styles.build) against every
+ * class in the scan and served at GET /styles/app.css. A `$style_<name>.css`
+ * anywhere in the scan is compiled the same way — this is just the base one.
+ *
+ * A $style file carries theme tokens and custom rules only — styles.build wraps
+ * it with the Tailwind import, the typography plugin and the content sources, so
+ * it compiles the same whether it lives in the workspace or in the project.
+ *
+ * The design system is daisyUI (styles.build adds the plugin): its component
+ * classes — `btn`, `card`, `alert`, `table` — and its theme, which is what
+ * `light`/`dark` switch. Build screens out of those.
+ *
+ * The colours below are NOT a second palette. They are the names the markup used
+ * before daisyUI, each defined as whatever daisyUI calls the same thing, so the
+ * ~1700 places that still say `bg-bg-content` follow the theme instead of a
+ * hardcoded grey. Nothing new should use them — reach for `bg-base-100`,
+ * `text-base-content`, `border-base-300`, `text-error` directly.
+ *
+ * The sizes further down are ours on purpose: daisyUI's defaults are built for
+ * marketing pages, and a clinical table needs to be denser than that.
+ * The component rules below are the handful of things utilities cannot say. */
+@theme {
+  --color-bg-primary: var(--color-base-200);
+  --color-bg-tertiary: var(--color-base-200);
+  --color-bg-quaternary: var(--color-base-300);
+  --color-bg-tint-hover: var(--color-base-300);
+  --color-bg-content: var(--color-base-100);
+  --color-bg-selected: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  --color-border-separator: var(--color-base-300);
+  --color-border-input: var(--color-base-300);
+  --color-border-focus: var(--color-primary);
+  --color-border-subtle: var(--color-base-300);
+  --color-text-primary: var(--color-base-content);
+  --color-text-heading: var(--color-base-content);
+  --color-text-muted: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --color-text-tertiary: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+  --color-text-placeholder: color-mix(in oklab, var(--color-base-content) 40%, transparent);
+  --color-text-inverse: var(--color-primary-content);
+  --color-text-link: var(--color-primary);
+  --color-brand: var(--color-primary);
+  --color-brand-hover: color-mix(in oklab, var(--color-primary) 90%, black);
+  --color-brand-disabled: color-mix(in oklab, var(--color-primary) 50%, transparent);
+  --color-accent-soft: color-mix(in oklab, var(--color-primary) 8%, transparent);
+  --color-focus-ring: var(--color-primary);
+  --color-status-running: var(--color-success);
+  --color-status-warning: var(--color-warning);
+  --color-status-error: var(--color-error);
+  --color-state-info-bg: color-mix(in oklab, var(--color-info) 10%, transparent);
+  --color-state-info-border: color-mix(in oklab, var(--color-info) 30%, transparent);
+  --color-state-info-fg: var(--color-info);
+  --color-state-success-bg: color-mix(in oklab, var(--color-success) 10%, transparent);
+  --color-state-success-border: color-mix(in oklab, var(--color-success) 30%, transparent);
+  --color-state-success-fg: var(--color-success);
+  --color-state-warning-bg: color-mix(in oklab, var(--color-warning) 10%, transparent);
+  --color-state-warning-border: color-mix(in oklab, var(--color-warning) 30%, transparent);
+  --color-state-warning-fg: var(--color-warning);
+  --color-state-danger-bg: color-mix(in oklab, var(--color-error) 10%, transparent);
+  --color-state-danger-border: color-mix(in oklab, var(--color-error) 30%, transparent);
+  --color-state-danger-fg: var(--color-error);
+  --color-state-neutral-bg: color-mix(in oklab, var(--color-neutral) 10%, transparent);
+  --color-state-neutral-border: color-mix(in oklab, var(--color-neutral) 30%, transparent);
+  --color-state-neutral-fg: var(--color-neutral);
+
+  --text-micro: 0.5625rem;
+  --text-micro--line-height: 0.75rem;
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 0.875rem;
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-ui-lg: 0.9375rem;
+  --text-ui-lg--line-height: 1.5rem;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.75rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+
+  --shadow-popover: 0 2px 10px rgba(0, 0, 0, 0.08);
+  --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.03), 0 12px 28px -16px rgba(28, 25, 23, 0.1);
+  --shadow-lg: 0 1px 2px rgba(28, 25, 23, 0.03), 0 14px 24px -14px rgba(28, 25, 23, 0.16);
+  --shadow-accent: 0 2px 6px -1px rgba(52, 97, 168, 0.4);
+
+  --tracking-eyebrow: 0.22em;
+  --tracking-label: 0.04em;
+}
+
+/* **Breakpoints measure the column, not the window.**
+ *
+ * This is the one rule that decides whether a screen written for a wide page
+ * survives being put in a narrow one. `sm:`, `md:`, `lg:` are viewport queries:
+ * inside the portal's 390px phone the window still reports 1600, so
+ * `sm:grid-cols-4` fires and four stat tiles are drawn across 390 pixels with
+ * every number cut in half. It is the same for the workspace's right half and
+ * for any pane narrower than the screen. Telling everybody to write `@md:`
+ * instead is a rule that has to be remembered on every element ever written,
+ * including by an agent, and it was not.
+ *
+ * So the variants themselves are redefined as container queries, and the layout
+ * column is the container. A page that says `sm:grid-cols-4` now means "when
+ * the column I am in is at least 40rem wide", which is what everybody writing
+ * it meant. On a full-width page the column IS the window, so nothing about the
+ * desktop changes.
+ *
+ * `container-type` goes on the panes and not on `body`: inline-size containment
+ * makes an element the containing block for `position: fixed` children, and a
+ * fixed footer measured against the body is a footer at the bottom of the
+ * document rather than of the screen. */
+@custom-variant sm (@container (width >= 40rem));
+@custom-variant md (@container (width >= 48rem));
+@custom-variant lg (@container (width >= 64rem));
+@custom-variant xl (@container (width >= 80rem));
+@custom-variant 2xl (@container (width >= 96rem));
+
+/* The panes a page is drawn in. Anything not inside one of these has no
+ * container to ask, and a container query with no container is false — which is
+ * the mobile-first layout, the safe end to fail towards. */
+#main, [data-role="pane"] { container-type: inline-size; }
+
+/* Three surfaces, not two. daisyUI's light theme puts base-200 two percent off
+ * white, which on a bright screen is white — so the harness and the product and
+ * the cards on it were all one colour with hairlines drawn between them.
+ *
+ *   base-200   the HARNESS — the chat column, the tab strip, the chrome
+ *   canvas     the PRODUCT's page, a shade lighter, so it reads as the thing
+ *              being built rather than as more of the frame around it
+ *   base-100   what stands on the page: a card, white, with a light border and
+ *              a shadow to lift it off
+ *
+ * After the plugin's own block on purpose — same specificity, later wins. */
+:root,
+[data-theme="light"] {
+  --color-base-200: oklch(96.8% 0.001 240);
+  --color-base-300: oklch(92.5% 0.003 240);
+
+  /* The brand colour. It was daisyUI's violet — the colour of a developer tool,
+   * on a screen a clinician is meant to work in. Teal reading into blue is what
+   * this trade has always used, and it has the advantage of not being any of
+   * the colours the record itself speaks with: green is "normal", amber is
+   * "check this", red is "abnormal", and a violet that means "our product"
+   * competes with all three for attention.
+   *
+   * `secondary` is the far end of the same sweep rather than a second brand
+   * colour: everything that has a gradient in it runs primary → secondary, so
+   * the two are one thing seen at two angles. */
+  --color-primary: oklch(60% 0.152 196);
+  --color-primary-content: oklch(99% 0.01 196);
+  --color-secondary: oklch(53% 0.168 244);
+  --color-secondary-content: oklch(99% 0.01 244);
+
+  /* Green is the record's word for "normal" — a resolved problem, a result in
+   * range, an allergy list somebody has actually asked about — so it is read
+   * next to the brand teal all day and it has to sit in the same gamut.
+   * daisyUI's own success is a neon mint (oklch 76% 0.18 163): at that
+   * lightness and chroma it is the brightest thing on a clinical page, which
+   * puts the loudest colour in the interface on the calmest fact in it.
+   * Ours is the same hue family, taken down to the brand's own lightness and
+   * roughly the brand's chroma, so "normal" reads as quiet agreement rather
+   * than as an alarm that happens to be green. */
+  --color-success: oklch(57% 0.115 158);
+  --color-success-content: oklch(99% 0.01 158);
+
+  /* Blue is "for information" — a booking that has not happened, a note beside
+   * a field — and daisyUI's is a sky blue at 72% lightness, which on white is
+   * pale enough to read as disabled and bright enough to compete with the
+   * brand. `secondary` is already the blue end of our own sweep, so info is
+   * that hue at the lightness green and teal are read at: the three semantic
+   * colours then weigh the same, and none of them outshouts the record's red. */
+  --color-info: oklch(55% 0.13 244);
+  --color-info-content: oklch(99% 0.01 244);
+}
+
+/* A soft badge is a tint of its colour on white — 8% in daisyUI's own rule,
+ * which is right on a card and gone on the page's grey: a status on a visit's
+ * header read as a smudge. Deeper tint and a hairline in its own colour, so
+ * the same badge is the same badge wherever it stands. */
+.badge-soft {
+  background-color: color-mix(in oklab, var(--badge-color, var(--color-base-content)) 14%, var(--color-base-100));
+  border-color: color-mix(in oklab, var(--badge-color, var(--color-base-content)) 35%, var(--color-base-100));
+}
+
+/* A button inside a toned card wears the card's colour: a warning box asks for
+ * something, and the thing that does it is yellow too — not the toolbar grey
+ * of a control that happens to stand there. One rule for the four tones. */
+[data-tone="warning"] .btn:not(.btn-primary):not(.btn-ghost) { background: color-mix(in oklab, var(--color-warning) 22%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent); color: var(--color-base-content); }
+[data-tone="danger"] .btn:not(.btn-primary):not(.btn-ghost) { background: color-mix(in oklab, var(--color-error) 18%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-error) 45%, transparent); color: var(--color-base-content); }
+[data-tone="info"] .btn:not(.btn-primary):not(.btn-ghost) { background: color-mix(in oklab, var(--color-info) 18%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-info) 45%, transparent); color: var(--color-base-content); }
+[data-tone="success"] .btn:not(.btn-primary):not(.btn-ghost) { background: color-mix(in oklab, var(--color-success) 18%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-success) 45%, transparent); color: var(--color-base-content); }
+[data-tone] .btn:not(.btn-primary):not(.btn-ghost):hover { filter: brightness(0.96); }
+
+/* A filled button is the one place the brand is a gradient rather than a colour:
+ * it is the single loudest element on a page, and the sweep is what makes it
+ * look lit rather than painted. Everything else stays flat — a page of gradients
+ * is a page with no hierarchy left.
+ *
+ * Hover brightens rather than recolours: a background IMAGE cannot be
+ * interpolated, so swapping one gradient for another lands in a single frame
+ * while the rest of the transition eases. */
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link) {
+  background-image: linear-gradient(135deg, var(--color-primary), color-mix(in oklab, var(--color-secondary) 78%, var(--color-primary)));
+  border-color: transparent;
+  transition: filter .2s ease, box-shadow .2s ease, transform .15s ease;
+}
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):hover { filter: brightness(1.07) saturate(1.05); }
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):active { filter: brightness(0.96); }
+/* …and a disabled one is not lit at all. daisyUI greys the disabled button with
+ * background-COLOR, which a background-image paints straight over: the send
+ * button stayed fully brand-coloured with a pale arrow on it, which reads as
+ * "press me" with the arrow broken rather than as "there is nothing to send". */
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):disabled,
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link)[disabled],
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link).btn-disabled {
+  /* The same :not() chain as the rule above, or it loses to it and a disabled
+     button keeps its gradient — which is exactly what happened. */
+  background-image: none; filter: none;
+}
+
+@theme {
+  /* A shade darker than it was: at 98.8% a white card had no edge on it, at
+   * 95% it has one and the text on the canvas still reads as on paper. */
+  --color-canvas: oklch(95% 0.002 240);
+}
+
+/* Golos Text — the interface typeface, and the one that made the choice: it is
+ * a Cyrillic-first face (Paratype, OFL) whose Latin was drawn to match, so a
+ * Russian chart and an English label are the same voice at the same colour.
+ * The system stack was not: SF Pro on a mac, Segoe UI on Windows, so the same
+ * dense table came out a few pixels different for every person looking at it,
+ * and Segoe's Cyrillic is a different rhythm from its Latin.
+ *
+ * Variable, 400–900 in one file per subset, `swap` so the text is on screen in
+ * the first frame and reflows into the face when it lands. Served by us
+ * (`$route_font_$name_GET.ts`), not linked at Google: a deploy should not reach
+ * a third party to draw its own text.
+ *
+ * `--font-sans` as well as the `body` rule, so `font-sans` — and anything
+ * daisyUI or Tailwind sets a family on — says the same thing. */
+@font-face {
+  font-family: "Golos Text"; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url("/procs/styles/font/cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Golos Text"; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url("/procs/styles/font/latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Golos Text"; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url("/procs/styles/font/latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  --font-sans: "Golos Text", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+body { font-family: var(--font-sans); }
+
+/* the chat's compose box: one focus ring around textarea + control row */
+.ui-compose-box {
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: 8px;
+  transition: border-color 0.22s, box-shadow 0.22s;
+}
+.ui-compose-box:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 10%, transparent);
+}
+/* The composer's send button is daisyUI's `btn btn-circle btn-primary` — only
+ * the arrow's stroke is ours. Its disabled look is the component's, which is the
+ * point: the old hand-rolled one dimmed the accent to 50%, and a half-strength
+ * accent still reads as a live button, so an empty composer looked sendable. */
+#send svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.ui-overlay-shadow { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); z-index: 600; }
+
+/* the tool pill's panel: a top-layer popover BESIDE the chat column, level with its pill.
+ * Under the pill it lay over the pills below it — a reader who forgot a panel was
+ * open pressed the next pill and hit the panel instead, so "some pills do not
+ * open". Beside the column it covers the app, which is the reader's to scroll
+ * back to, and never a pill. The column's width is `--chat-w`, written on the
+ * root by its own resizer; the pill only lends its top, clamped to the screen. */
+.tool-actions-tooltip {
+  position: fixed; left: calc(var(--chat-w, 24rem) + 0.5rem); top: clamp(1rem, anchor(top), calc(100dvh - 8rem)); right: auto; bottom: auto;
+  margin: 0; z-index: 50; overflow: visible;
+  width: min(30rem, calc(100vw - var(--chat-w, 24rem) - 1.5rem)); max-height: calc(100dvh - 2rem);
+}
+.tool-actions-tooltip.tool-actions-tooltip-large {
+  top: 1rem; height: calc(100dvh - 2rem); width: min(44rem, calc(100vw - var(--chat-w, 24rem) - 1.5rem));
+}
+.tool-actions-scroll { max-height: inherit; }
+/* the set an answer was picked from (chat.picked): an ⓘ in the bubble, the set right under it */
+.picked > summary::-webkit-details-marker { display: none; }
+.picked > summary:hover .picked-i, .picked[open] > summary .picked-i { color: var(--color-primary); }
+.picked[open] > summary { border-bottom-right-radius: .25rem; }
+.picked-set { animation: ui-toast-in .2s ease-out both; }   /* floats beside the bubble, takes no room in the column */
+
+/* the chat's disclosure rows: tool calls, thinking, "show full <section>" */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+.tool-output-full[open] + .tool-output-preview { display: none; }
+.tool-actions-anchor:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* Something on the page that is not the thing yet — a tile standing where a
+ * widget is being written. It never reaches full ink: the breath between 55%
+ * and 85% says "still coming" without the twitch of a full fade. */
+.ui-waiting { animation: ui-waiting 1.8s ease-in-out infinite; }
+@keyframes ui-waiting { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .ui-waiting { animation: none; opacity: 0.7; } }
+
+.tool-icon-running { border-color: color-mix(in oklab, var(--color-base-content) 70%, transparent); color: var(--color-base-content); animation: tool-icon-pulse 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) infinite; }
+@keyframes tool-icon-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(28, 25, 23, 0.28); }
+  70% { box-shadow: 0 0 0 5px rgba(28, 25, 23, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(28, 25, 23, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .tool-icon-running { animation: none; } }
+.ui-panel-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 16px; height: 52px; flex-shrink: 0;
+  background: var(--color-base-200); border-bottom: 1px solid var(--color-base-300);
+}
+.ui-pane-header { flex-shrink: 0; border-bottom: 1px solid var(--color-base-300); background: var(--color-base-200); display: flex; align-items: center; min-height: 52px; }
+
+/* Scrollbars are there while the pointer is over what scrolls, and fade out
+ * when it leaves. A permanent grey bar down the side of every column is a piece
+ * of furniture that says nothing — where you are in a document is worth a glance
+ * while you are reading it, and nothing the rest of the time.
+ *
+ * The track keeps its width whether the thumb is visible or not, so nothing
+ * reflows when it appears: only the colour changes, which is also the only thing
+ * WebKit will animate here. Hovering a child hovers its scroll container too, so
+ * "the pointer is inside this box" is what brings the bar up.
+ *
+ * `@media (hover: hover)` keeps this off touch, where a scrollbar is already an
+ * overlay that comes and goes on its own and nothing is ever hovered. */
+@media (hover: hover) {
+  /* Said with the standard properties, because daisyUI sets `scrollbar-color`
+   * on :root — the property inherits, so every element carries a non-initial
+   * value, and an element that has one makes Chrome ignore its
+   * ::-webkit-scrollbar rules entirely. (Handing it back with
+   * `scrollbar-color: auto` does not survive the build: it is the initial value
+   * and the minifier drops the declaration.)
+   *
+   * There is no fade here, and there cannot be one: Chrome does not interpolate
+   * `scrollbar-color` — it holds the old colour and snaps at the halfway point.
+   * A duration would therefore only make the bar ARRIVE late. So it arrives with
+   * the pointer and leaves half a second after it: `transition: none` on hover
+   * is the instant appearance, and the delay on the resting rule is what keeps
+   * the bar from blinking out the moment the pointer crosses a border. */
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0s 0.5s; }
+  *:hover { scrollbar-color: color-mix(in oklab, var(--color-base-content) 25%, transparent) transparent; transition: none; }
+
+  /* Safari before 18 has no `scrollbar-color` at all — daisyUI's declaration
+   * does nothing there either, so the webkit spelling is free to work, and it
+   * does animate the thumb's colour. */
+  @supports not (scrollbar-color: transparent) {
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    /* The bar is 4px of colour in a 10px gutter: the border is transparent and
+     * the paint is clipped to the content box, which is how a rounded thumb gets
+     * padding without a second element. */
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+    transition: background-color 0.35s ease;
+  }
+  *:hover::-webkit-scrollbar-thumb { background-color: color-mix(in oklab, var(--color-base-content) 22%, transparent); }
+    *::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklab, var(--color-base-content) 40%, transparent); }
+  }
+}
+
+/* the plugin tab strip (src/ui/tabs.ts) */
+.ui-tabbar { display: flex; align-items: stretch; align-self: stretch; gap: 1px; height: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.ui-tabbar::-webkit-scrollbar { display: none; }
+.ui-tab {
+  display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0;
+  height: 100%; padding: 0; position: relative;
+  font-size: 12px; font-weight: 500; color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+  white-space: nowrap; transition: color 0.15s;
+}
+/* One hover for the whole tab, × included: the close is part of the tab, not a
+ * button parked beside it. It keeps a stronger hover of its own on top, which is
+ * what says the two are different targets. */
+.ui-tab:hover, .ui-tab.is-active { color: var(--color-base-content); }
+.ui-tab:hover { background: var(--color-base-300); }
+.ui-tab--closable { padding-right: 6px; }
+.ui-tab--closable .ui-tab__link { padding-right: 3px; }
+.ui-tab.is-active::after {
+  content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px;
+  height: 2px; background: var(--color-base-content); border-radius: 1px;
+}
+.ui-tab__link { display: inline-flex; align-items: center; gap: 6px; height: 100%; padding: 0 9px; }
+/* Always there, not on hover: a tab you can close should say so before you go
+   looking for the way. */
+.ui-tab__close {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; margin-left: 2px; border: 0; border-radius: 4px;
+  background: transparent; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); font-size: 11px; cursor: pointer;
+}
+.ui-tab__close:hover { background: color-mix(in oklab, var(--color-base-content) 18%, transparent); color: var(--color-base-content); }
+.ui-tab__icon { font-size: 16px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); flex-shrink: 0; }
+.ui-tab:hover .ui-tab__icon, .ui-tab.is-active .ui-tab__icon { color: var(--color-base-content); }
+.ui-tab__label { display: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+.ui-tab.is-active .ui-tab__label, .ui-tab--named .ui-tab__label { display: inline; }
+/* Apps, then the hosts it runs in: a rule instead of a caption. */
+.ui-tab-sep { align-self: center; width: 1px; height: 18px; margin: 0 6px; background: var(--color-base-300); flex: 0 0 auto; }
+
+/* the workspace pointing at things in the page (src/page/client.js) */
+#page-pointer, #page-ring, #page-caption {
+  position: fixed; z-index: 900; pointer-events: none;
+  transition: opacity .25s ease, left .5s cubic-bezier(.22,.61,.36,1), top .5s cubic-bezier(.22,.61,.36,1);
+}
+#page-pointer { filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+#page-ring {
+  border: 2px solid var(--color-primary); border-radius: 6px;
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  transition: opacity .25s ease, left .5s cubic-bezier(.22,.61,.36,1), top .5s cubic-bezier(.22,.61,.36,1), width .5s, height .5s;
+}
+/* …and the other direction: a person pointing at the page for the agent. The
+ * ring is the same ring, but it follows the mouse rather than flying, so it
+ * must not glide after it — and the whole pane says it is armed by the cursor
+ * over it. */
+body.is-picking, body.is-picking * { cursor: crosshair !important; }
+body.is-picking #page-ring { transition: opacity .1s ease; }
+
+#page-caption {
+  max-width: 22rem; padding: 8px 12px; border-radius: 8px;
+  background: var(--color-base-content); color: #fff;
+  font-size: 13px; line-height: 1.35; box-shadow: 0 6px 20px -8px rgba(0,0,0,.5);
+}
+
+/* the tour: a hole in the dimming, and the panel that drives it.
+ * The panel is the only control surface — a tour that moves on its own is what
+ * this replaces — so it is the one thing here that takes clicks, and it sits
+ * over the app rather than over the whole window: the harness's tab strip and
+ * the chat stay reachable while somebody is being shown around. */
+#page-dim { position: fixed; inset: 0; z-index: 880; pointer-events: none; }
+/* …clipped to the app when what is lit up is in the app: the same seam the map
+ * sheet uses (--chat-w, --app-top), so the harness is never greyed out. */
+#page-dim[data-scope="app"] { clip-path: inset(var(--app-top, 3rem) 0 0 var(--chat-w, 24rem)); }
+#page-spot {
+  position: fixed; pointer-events: none; border-radius: 10px;
+  outline: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 9999px color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  transition: opacity .3s ease, left .4s cubic-bezier(.22,.61,.36,1), top .4s cubic-bezier(.22,.61,.36,1), width .4s, height .4s;
+}
+/* A step that names no control is about the page: its heading is outlined and
+ * nothing is dimmed. */
+#page-dim[data-mark="page"] #page-spot { box-shadow: none; }
+#page-tour {
+  position: fixed; z-index: 950; right: 1.25rem; bottom: 1.25rem; width: 22rem; max-width: calc(100vw - 2.5rem);
+  display: none; flex-direction: column; gap: .5rem; padding: 1rem;
+  border: 1px solid var(--color-base-300); border-radius: .75rem;
+  background: var(--color-base-100); color: var(--color-base-content);
+  box-shadow: 0 18px 40px -12px rgba(0,0,0,.45);
+}
+#page-tour[data-open] { display: flex; }
+.page-tour__head { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+.page-tour__head button { cursor: pointer; font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.page-tour__head button:hover { background: var(--color-base-200); }
+.page-tour__text { font-size: 14px; line-height: 1.45; }
+.page-tour__where { font-size: 12px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+.page-tour__foot { display: flex; align-items: center; gap: .5rem; }
+.page-tour__go { flex: 1; cursor: pointer; padding: .4rem .75rem; border-radius: .5rem; font-size: 13px; font-weight: 500;
+  background: var(--color-primary); color: var(--color-primary-content); }
+.page-tour__go:disabled { opacity: .6; cursor: default; }
+.page-tour__ghost { cursor: pointer; padding: .4rem .6rem; border-radius: .5rem; font-size: 12px;
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+.page-tour__ghost:hover:not(:disabled) { background: var(--color-base-200); }
+.page-tour__ghost:disabled { opacity: .35; cursor: default; }
+.page-tour__end { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.page-tour__dots { display: inline-flex; gap: 4px; }
+.page-tour__dots i { width: 6px; height: 6px; border-radius: 999px; background: var(--color-base-300); }
+.page-tour__dots i[data-status="done"] { background: color-mix(in oklab, var(--color-primary) 45%, transparent); }
+.page-tour__dots i[data-status="now"] { background: var(--color-primary); width: 16px; }
+/* The guided countdown, across the foot of the panel: what a step's remaining
+ * time looks like. It is empty (and so invisible) in the manual mode, where
+ * nothing moves on its own — the width is animated from the player. */
+.page-tour__timer { margin: .75rem -1rem -1rem; height: 3px; border-radius: 0 0 var(--radius-box, 1rem) var(--radius-box, 1rem); overflow: hidden; }
+.page-tour__timer i { display: block; width: 0; height: 100%; background: var(--color-primary); }
+
+/* rendered agent markdown */
+/* Code in a transcript is drawn as a WHITE bordered chip rather than a grey fill.
+ * The chat column is grey — it is harness, not product — and a grey-on-grey chip
+ * is an invisible chip; on the white of a rendered file it would be invisible the
+ * other way round. A border is what makes one rule right on both surfaces. */
+.md-preview pre { padding: 0.5rem 0.75rem; border-radius: 0.375rem; overflow-x: auto; margin: 1rem 0; background: var(--color-base-100); border: 1px solid var(--color-base-300); color: var(--color-base-content); }
+.md-preview div + pre { margin-top: 0; }
+.md-preview pre code { font-size: 0.8125rem; background: transparent; padding: 0; }
+.md-preview :not(pre) > code { font-size: 0.8125rem; font-weight: 500; background: var(--color-base-100); border: 1px solid var(--color-base-300); padding: 0.0625rem 0.3125rem; border-radius: 0.25rem; color: var(--color-base-content); }
+.md-preview code::before, .md-preview code::after { content: none; }
+.md-preview blockquote { border-left: 4px solid color-mix(in oklab, var(--color-primary) 30%, transparent); background: color-mix(in oklab, var(--color-primary) 5%, transparent); border-radius: 0 0.25rem 0.25rem 0; padding: 0.5rem 1rem; font-style: normal; }
+.md-preview h1 { padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-base-300); }
+.md-preview a { color: var(--color-primary); text-decoration: none; }
+.md-preview a:hover { text-decoration: underline; }
+.md-preview img { border-radius: 0.25rem; }
+.md-preview table { border-collapse: collapse; }
+.md-preview th { background: var(--color-base-300); }
+.md-preview td, .md-preview th { border: 1px solid var(--color-base-300); padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+
+/* server-highlighted code blocks (ui.code, Shiki github-light) */
+.ui-code pre { margin: 0; padding: 0.75rem 1rem; background: var(--color-base-200) !important; }
+.ui-code code { font-size: 0.6875rem; line-height: 1.5; }
+
+/* focus & hover the components share — inputs ring, actions outline */
+/* **One height per size, across every control.** A Save beside a field has to
+ * be exactly as tall as the field, and daisyUI does not guarantee it: in this
+ * build `input-sm` and `btn-sm` agree at 32px, `select-sm` comes out at 40, and
+ * `input-xs` does not shrink at all — so any row mixing them steps up and down.
+ * Pinned here, once, and every `ui.field`/`ui.button`/`ui.select` pair lines up
+ * wherever it is used.
+ *
+ * Heights only. Padding, radius and colour stay the component's.
+ *
+ * `h-auto` is the way out, and it has to be written down: a control that says
+ * it grows with its content means it — a chip holding a sentence wraps to two
+ * lines, and a fixed height cut the second one in half, border through the
+ * words. A utility and a component class weigh the same, so without the
+ * exclusion whichever came last won, which is not a rule anybody can use. */
+.btn-xs:not(.h-auto), .input-xs, .select-xs, .file-input-xs { height: 1.5rem; min-height: 1.5rem; }
+.btn-sm:not(.h-auto), .input-sm, .select-sm, .file-input-sm { height: 2rem; min-height: 2rem; }
+.btn-lg:not(.h-auto), .input-lg, .select-lg, .file-input-lg { height: 3rem; min-height: 3rem; }
+.btn:not(.btn-xs):not(.btn-sm):not(.btn-lg):not(.btn-block):not(.h-auto),
+.input:not(.input-xs):not(.input-sm):not(.input-lg),
+.select:not(.select-xs):not(.select-sm):not(.select-lg) { height: 2.5rem; min-height: 2.5rem; }
+
+.ui-input { transition: border-color .15s, box-shadow .15s; }
+/* The focused field, and the one rule that has to beat daisyUI's own. Its
+ * `.input`/`.select` draw focus as `outline: 2px solid var(--input-color)` over a
+ * hairline shadow, and `--input-color` is base-content — so a focused field wore
+ * a thick BLACK double ring, in a UI whose accent is violet. Repointing that
+ * variable at the primary is what makes daisyUI's own outline ours; the ring
+ * below is the soft halo, and the outline itself goes. `:focus-within` is here
+ * for the controls that wrap their input (a select, a number with steppers). */
+.ui-input:focus, .ui-input:focus-visible, .ui-input:focus-within {
+  --input-color: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 12%, transparent);
+  outline: none;
+}
+/* The seam between the chat and the page: a 9px strip you can catch, with a
+   2px line that lights up under the pointer and stays lit for the whole drag —
+   an invisible handle is one nobody believes is there. */
+.chat-resize {
+  position: absolute; top: 0; bottom: 0; right: 0; z-index: 10;
+  width: 9px; transform: translateX(50%); cursor: col-resize; touch-action: none;
+}
+.chat-resize::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 2px; transform: translateX(-50%); border-radius: 1px;
+  background: transparent; transition: background .12s;
+}
+/* Full-strength primary and a halo around it — a hairline the colour of a border
+   reads as an edge that happens to be violet, not as a control answering the
+   pointer. */
+.chat-resize:hover::after, .chat-resize.is-dragging::after {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 20%, transparent);
+}
+/* …and while it is being dragged the whole window stops selecting text under it. */
+body.is-resizing { user-select: none; cursor: col-resize; }
+
+.ui-focusable:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; border-radius: 4px; }
+/* A menu whose rows are two lines each. daisyUI packs menu items for one word
+ * apiece; at two lines that reads as a wall, so the rows get room and the
+ * hairline between them has something to separate. */
+/* A menu row lights up faintly. daisyUI's own hover is a tenth of the text
+ * colour — on a white panel that is a grey slab under the words, which reads
+ * louder than the panel itself and turns a quiet list into a set of buttons. */
+.dropdown-content.menu li > *:not(ul):not(.menu-title):not(details):hover,
+.dropdown-content.menu li > *:not(ul):not(.menu-title):not(details):focus-visible {
+  background-color: color-mix(in oklab, var(--color-base-content) 4%, transparent);
+}
+.ui-menu-roomy { padding: .375rem; }
+.ui-menu-roomy li > * { padding: .625rem .75rem; gap: .625rem; }
+
+/* `ui.select` — a button and a list, because a native <select> hands its open
+ * state to the platform: on macOS the OS paints a heavy black ring over the
+ * control while the list is down, and the page reports `outline: none` at that
+ * exact moment. The button wears `.ui-input`, so focus is the same rule as a
+ * text field's, and OPEN is drawn as focus on purpose: to a hand they are one
+ * state, and the whole reason this widget exists is that they looked different. */
+.ui-select__button { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+.ui-select[data-open] .ui-select__button {
+  --input-color: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 12%, transparent);
+  outline: none;
+}
+.ui-select__options {
+  position: absolute; z-index: 50; top: calc(100% + .25rem); left: 0; right: 0;
+  max-height: 16rem; overflow-y: auto; padding: .25rem;
+  border: 1px solid var(--color-base-300); border-radius: var(--radius-box, .5rem);
+  background: var(--color-base-100); box-shadow: 0 10px 25px -5px rgb(0 0 0 / .15);
+}
+.ui-select__option {
+  display: flex; align-items: center; gap: .5rem; cursor: pointer;
+  padding: .35rem .5rem; border-radius: .375rem; font-size: .875rem; line-height: 1.25rem;
+}
+/* The tick holds its column whether or not it is drawn, so the words do not
+   shuffle sideways as the choice moves. */
+.ui-select__option > .ph { flex: none; opacity: 0; font-size: .875rem; color: var(--color-primary); }
+.ui-select__option[aria-selected="true"] { color: var(--color-primary); font-weight: 500; }
+.ui-select__option[aria-selected="true"] > .ph { opacity: 1; }
+.ui-select__option:hover, .ui-select__option[data-active] { background: var(--color-base-200); }
+
+.ui-input-group { transition: border-color .15s, box-shadow .15s; }
+.ui-input-group:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 10%, transparent); }
+.ui-radio-card { transition: border-color .15s, background .15s, box-shadow .15s; }
+.ui-radio-card:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 10%, transparent); border-color: var(--color-primary); }
+.ui-radio-card:has(input:checked) {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+
+/* modal dialog (ui.dialog) — HTML popover, dimmed backdrop */
+.ui-dialog { margin: auto; padding: 0; width: min(32rem, calc(100vw - 2rem)); border: 1px solid var(--color-base-300); border-radius: 10px; background: var(--color-base-100); box-shadow: 0 14px 24px -14px rgba(28,25,23,.16); }
+.ui-dialog::backdrop { background: rgba(0,0,0,.3); }
+
+/* A drawer — a popover that slides in from the right and stays beside the page:
+   one thing opened for a closer look (a pathway from the Apps schema) while the
+   page it came from stays in view. Same mechanism as the dialog, different place. */
+
+/* ui.toast — the corner where what-just-happened lands and leaves. */
+/* A suggested answer (`ui.suggest`): a pill that fills while it is held. */
+.ui-suggest { position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; gap: .25rem; max-width: 100%; padding: .375rem .875rem; border: 1.5px solid var(--color-base-content); border-radius: 9999px; background: transparent; color: var(--color-base-content); font-size: .875rem; font-weight: 600; line-height: 1.35; text-align: left; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease; }
+.ui-suggest > * { position: relative; z-index: 1; }
+.ui-suggest:hover { background: var(--color-base-100); transform: translateY(-1px); box-shadow: 0 6px 14px -10px rgb(0 0 0 / .35); }
+.ui-suggest:active { transform: none; }
+.ui-suggest.is-recommended { border-color: var(--color-primary); color: var(--color-primary); }
+.ui-suggest::before { content: ""; position: absolute; inset: 0; background: color-mix(in oklab, currentColor 14%, transparent); transform-origin: left; transform: scaleX(0); transition: transform .25s ease; }
+.ui-suggest.is-holding::before { transform: scaleX(1); transition: transform .4s linear; }
+.ui-suggest.is-taken { animation: ui-suggest-taken .5s cubic-bezier(.2, .7, .2, 1); }
+@keyframes ui-suggest-taken { 40% { transform: scale(.94); } }
+@media (prefers-reduced-motion: reduce) { .ui-suggest, .ui-suggest::before { transition: none; } .ui-suggest.is-taken { animation: none; } .ui-brief, .ui-decide { animation: none; } }
+
+.ui-toasts { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: .5rem; width: max-content; max-width: min(36rem, calc(100vw - 2rem)); pointer-events: none; }
+.ui-toast { pointer-events: auto; animation: ui-toast-in .25s ease-out both; }
+.ui-toast--leaving { animation: ui-toast-out .25s ease-in both; }
+@keyframes ui-toast-in { from { opacity: 0; transform: translateY(.5rem); } to { opacity: 1; transform: none; } }
+@keyframes ui-toast-out { to { opacity: 0; transform: translateY(.5rem); } }
+@media (prefers-reduced-motion: reduce) { .ui-toast, .ui-toast--leaving { animation: none; } }
+
+/* A flow down a spine — the Apps schema and a pathway's plan. A step is three
+   columns: the day on the left, the line with its knot, the body. The knot says
+   what kind of step it is: a ring for a clinician's screen, a square for the
+   patient at home, a diamond where a pathway takes over, a dot for a milestone
+   nothing runs on; with a patient played through, the state colours it. */
+.ui-flow { display: grid; list-style: none; margin: 0; padding: 0; }
+.ui-flow__step { display: grid; grid-template-columns: 5.5rem 1.75rem minmax(0, 1fr); column-gap: .75rem; }
+.ui-flow__day { padding-top: .8rem; text-align: right; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 50%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-flow__spine { position: relative; }
+.ui-flow__spine::before { content: ""; position: absolute; left: 13px; top: 0; bottom: 0; width: 2px; background: var(--color-base-300); }
+.ui-flow__step:first-child .ui-flow__spine::before { top: 20px; }
+.ui-flow__step:last-child .ui-flow__spine::before { bottom: auto; height: 20px; }
+.ui-flow__knot { position: absolute; left: 7px; top: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-base-100); border: 2.5px solid var(--color-primary); }
+.ui-flow__knot--start { background: var(--color-primary); }
+.ui-flow__knot--patient { border-radius: 4px; border-color: var(--color-secondary); }
+.ui-flow__knot--mile { width: 18px; height: 18px; left: 5px; top: 12px; background: var(--color-base-content); border-color: var(--color-base-100); box-shadow: 0 0 0 2px var(--color-base-content); }
+.ui-flow__day--mile { color: var(--color-base-content); padding-top: .95rem; }
+.ui-flow__body { min-width: 0; margin: 0 0 .5rem; padding: .5rem .75rem .55rem; border: 1px solid var(--color-base-300); border-radius: 10px; background: var(--color-base-100); }
+.ui-flow__body--press { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.ui-flow__body--press:hover { border-color: var(--color-primary); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+/* The milestone is a date, not a screen: a band across the row, no box. */
+.ui-flow__step--mile { margin: .25rem 0 .75rem; border-radius: 10px; background: color-mix(in oklab, var(--color-base-content) 6%, transparent); }
+.ui-flow__step--mile .ui-flow__spine::before { top: 0; bottom: 0; height: auto; }
+.ui-flow__body--mile { border: 0; background: transparent; margin: 0; padding: .6rem .75rem .6rem 0; }
+/* A pathway is a group on the spine, said with two lines and an indent: a
+   coloured rule "pathway begins", the head under it as a block like any other, the lines
+   between a little further in, a rule "pathway ends". No frame, no fill. */
+.ui-flow__rule { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .6rem; margin: 1rem 0 .35rem; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--color-primary); }
+.ui-flow__rule::after { content: ""; height: 2px; border-radius: 2px; background: var(--color-primary); opacity: .5; }
+.ui-flow__rule--end { grid-template-columns: 1fr auto; margin: .75rem 0 1.5rem; }
+.ui-flow__rule--end::after { content: none; }
+.ui-flow__rule--end::before { content: ""; height: 2px; border-radius: 2px; background: var(--color-primary); opacity: .5; }
+.ui-flow__step--last .ui-flow__spine::before { top: 0; bottom: 0; height: auto; }
+/* The tag on the right edge is always there — it is how a block is told apart at a glance. Only the who-chip waits for hover. */
+.ui-flow__body [data-role="who"] { opacity: 0; transition: opacity .15s; }
+.ui-flow__body:hover [data-role="who"], .ui-flow__body:focus-within [data-role="who"] { opacity: 1; }
+@media (hover: none) { .ui-flow__body [data-role="who"] { opacity: 1; } }
+/* The milestone inside a group is a band on the cell, not across the row. */
+.ui-flow__step--in.ui-flow__step--mile { margin: 0; background: transparent; border-radius: 0; }
+.ui-flow__step--in.ui-flow__step--mile > .ui-flow__cell > .ui-flow__body--mile { margin: 0 0 .5rem; padding: .6rem .75rem; border-radius: 8px; background: color-mix(in oklab, var(--color-base-content) 6%, transparent); }
+.ui-flow__step--plan:last-child .ui-flow__spine::before { bottom: 0; height: auto; }
+.ui-flow__knot--done { background: var(--color-success); border-color: var(--color-success); }
+.ui-flow__knot--late, .ui-flow__knot--failed { border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 15%, transparent); }
+.ui-flow__body { scroll-margin: 1rem; }
+/* Two zones in a block: the words on the left, never wider than a line a person reads in one go; the tag on the right, on the same spot down the whole page — the words never run under it. */
+.ui-flow__zones { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1.5rem; align-items: center; }
+.ui-flow__text { min-width: 0; max-width: 700px; }
+.ui-flow__body--hit { animation: ui-flow-hit 4s ease-out both; }
+@keyframes ui-flow-hit { 0%, 70% { border-color: var(--color-primary); box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 18%, transparent); background: color-mix(in oklab, var(--color-primary) 6%, var(--color-base-100)); } 100% { border-color: var(--color-base-300); box-shadow: none; background: var(--color-base-100); } }
+/* The step that waits on the person: it breathes until they act. */
+.ui-flow__body--pulse { border-color: var(--color-warning); animation: ui-flow-pulse 1.6s ease-in-out infinite; }
+.ui-flow__knot--pulse { border-color: var(--color-warning); animation: ui-flow-pulse 1.6s ease-in-out infinite; }
+@keyframes ui-flow-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-warning) 45%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-warning) 0%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .ui-flow__body--pulse, .ui-flow__knot--pulse { animation: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-warning) 30%, transparent); } }
+/* The forks hang under the block, each off an elbow that starts in the gap below it — never across it. */
+.ui-flow__forks { margin: -.15rem 0 .6rem .75rem; display: grid; gap: .3rem; }
+.ui-flow__fork { position: relative; padding-left: 1.4rem; font-size: .8125rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
+.ui-flow__fork::before { content: ""; position: absolute; left: 2px; top: -7px; width: 12px; height: 18px; border-left: 2px solid var(--color-base-300); border-bottom: 2px solid var(--color-base-300); border-bottom-left-radius: 8px; }
+.ui-flow__when { display: inline-flex; align-items: center; gap: .3rem; font-size: 12.5px; font-weight: 500; padding: 1px 8px 1px 6px; border-radius: 999px; border: 1px dashed var(--color-base-300); background: var(--color-base-200); white-space: nowrap; }
+
+
+/* the map of everything (workspace/src/ui/map.ts) — a sheet over the APP, with
+ * the app dimmed behind it. Not over the window: what surrounds the app is the
+ * harness — the chat on the left, the tab strip on top — and covering those says
+ * the whole workspace is busy when only the product has something to show. They
+ * also stay usable: the strip is how you leave this. So the sheet is inset into
+ * the app's own box, from two numbers the layout already carries:
+ *
+ *   --chat-w  the chat column's width, written on the root by its own resizer
+ *             (workspace/src/chat/client.js) — drag the column and this follows
+ *   --app-top the tab strip's height (workspace/src/ui/tabs.ts, `h-12`)
+ *
+ * The dim is clipped to the same box rather than tinted with a gradient: two
+ * edges cannot be expressed as one gradient, and `clip-path` says exactly the
+ * rectangle the sheet belongs to.
+ *
+ * A popover is `display: none` until it opens, and an author `display` would beat
+ * that UA rule and leave the sheet on screen for good: the layout goes on
+ * `:popover-open` for that reason. */
+:root { --app-top: 3rem; }
+.ui-sheet { position: fixed; top: calc(var(--app-top) + 1rem); right: 1rem; bottom: 1rem; left: calc(var(--chat-w, 24rem) + 1rem); width: auto; height: auto; max-width: none; max-height: none; margin: 0; padding: 0; overflow: hidden; flex-direction: column; border: 1px solid var(--color-base-300); border-radius: 14px; background: var(--color-base-100); box-shadow: 0 24px 60px -20px rgba(28,25,23,.35); }
+.ui-sheet:popover-open { display: flex; }
+.ui-sheet::backdrop { background: rgba(0,0,0,.4); clip-path: inset(var(--app-top, 3rem) 0 0 var(--chat-w, 24rem)); }
+@media (max-width: 640px) { .ui-sheet { inset: 0.5rem; } .ui-sheet::backdrop { clip-path: none; } }
+
+/* tooltip (ui.tooltip) — CSS bubble on hover/focus */
+.ui-tooltip { position: relative; display: inline-flex; }
+.ui-tooltip__bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 6px; white-space: nowrap; padding: 4px 8px; border-radius: 6px; background: var(--color-base-content); color: #fff; font-size: 11px; line-height: 1.2; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 60; }
+.ui-tooltip:hover .ui-tooltip__bubble, .ui-tooltip:focus-visible .ui-tooltip__bubble, .ui-tooltip:focus-within .ui-tooltip__bubble { opacity: 1; }
+
+/* skeleton shimmer (ui.skeleton) */
+.ui-skeleton { position: relative; overflow: hidden; }
+.ui-skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent); animation: ui-shimmer 1.4s infinite; }
+@keyframes ui-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .ui-skeleton::after { animation: none; } }
+
+/* tree caret (ui.tree) */
+.ui-tree__caret { transition: transform .12s; }
+details[open] > summary .ui-tree__caret { transform: rotate(90deg); }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+
+/* combobox results reveal when populated (ui.combobox) */
+.ui-combobox__results:not(:empty) { display: block; }
+
+/* the Apps Map (libs/apps map.ts) — the diagram module draws the graph; this is the card and the panel beside it */
+.ui-map { position: relative; border: 1px solid var(--color-base-300); border-radius: 14px; overflow: hidden; background: var(--color-base-100); }
+.ui-map .ui-graph { border: 0; border-radius: 0; }
+/* an app is a card: an icon tile in its host's colour, the host in small caps, the name — the one thing to tell apart at a glance. A pathway is the dark one. The forms a pathway sends are one stack. */
+.ui-map__card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--color-base-300); border-radius: 14px; background: var(--color-base-100); box-shadow: 0 1px 2px rgba(20,24,40,.05), 0 10px 24px -14px rgba(20,24,40,.35); }
+.ui-map__ico { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; }
+.ui-map__ico svg { width: 22px; height: 22px; }
+.ui-map__ico--sm { width: 18px; height: 18px; border-radius: 4px; display: inline-grid; margin-right: 6px; vertical-align: -4px; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+.ui-map__ico--sm svg { width: 15px; height: 15px; }
+.ui-map__host { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+.ui-map__name { font-size: 14px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+.ui-map__card--ehr .ui-map__ico { background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)); color: var(--color-primary); }
+.ui-map__card--ehr .ui-map__host { color: var(--color-primary); }
+.ui-map__card--portal .ui-map__ico { background: color-mix(in oklab, var(--color-secondary) 14%, var(--color-base-100)); color: var(--color-secondary); }
+.ui-map__card--portal .ui-map__host { color: var(--color-secondary); }
+.ui-map__card--flow { border-color: var(--color-base-content); background: var(--color-base-content); color: var(--color-base-100); box-shadow: 0 1px 2px rgba(20,24,40,.2), 0 12px 28px -12px rgba(20,24,40,.6); }
+.ui-map__card--flow .ui-map__ico { background: color-mix(in oklab, var(--color-base-100) 16%, transparent); color: var(--color-base-100); }
+.ui-map__card--flow .ui-map__host { color: color-mix(in oklab, var(--color-base-100) 65%, transparent); }
+.ui-map__stack { overflow: hidden; border: 1px solid var(--color-base-300); border-radius: 12px; background: var(--color-base-100); font-size: 11.5px; box-shadow: 0 1px 2px rgba(20,24,40,.04), 0 8px 20px -14px rgba(20,24,40,.3); }
+.ui-map__stack .ui-map__host { display: flex; align-items: center; padding: 8px 12px 6px; background: var(--color-base-200); }
+.ui-map__line { display: flex; justify-content: space-between; gap: 8px; padding: 2px 12px; line-height: 18px; border-top: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent); }
+.ui-map__line:first-of-type { border-top: 0; }
+/* the Logic tab (libs/apps logic.ts): a block scheme's nodes — start/end pills, steps, a question, an outcome, the trigger, a milestone */
+.ui-logic { display: flex; align-items: center; gap: 10px; padding: 6px 14px; overflow: hidden; border: 1.5px solid var(--color-base-300); border-radius: 12px; background: var(--color-base-100); font-size: 12.5px; line-height: 1.25; box-shadow: 0 1px 2px rgba(20,24,40,.05), 0 8px 20px -14px rgba(20,24,40,.3); }
+.ui-logic__title, .ui-logic__sub { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-logic__title { -webkit-line-clamp: 2; }
+.ui-logic__sub { -webkit-line-clamp: 2; }
+.ui-logic--step .ui-logic__title { -webkit-line-clamp: 1; }
+.ui-logic > i { flex: none; font-size: 18px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+.ui-logic__title { font-weight: 600; line-height: 1.25; }
+.ui-logic__sub { font-size: 11px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); margin-top: 1px; }
+.ui-logic--start, .ui-logic--end, .ui-logic--mile { justify-content: center; border-radius: 999px; font-weight: 700; }
+.ui-logic--start { border-color: var(--color-base-content); }
+.ui-logic--end { border-color: var(--color-error); color: var(--color-error); }
+.ui-logic--end > i { color: var(--color-error); }
+.ui-logic--mile { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+.ui-logic--trigger { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+.ui-logic--trigger > i, .ui-logic--trigger .ui-logic__sub { color: color-mix(in oklab, var(--color-base-100) 70%, transparent); }
+.ui-logic--q { border-color: var(--color-warning); background: color-mix(in oklab, var(--color-warning) 10%, var(--color-base-100)); }
+.ui-logic--q > i { color: var(--color-warning); }
+.ui-logic--out { border-style: dashed; justify-content: center; text-align: center; }
+.ui-map__panel { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; z-index: 3; border-left: 1px solid var(--color-base-300); padding: 16px 18px; overflow: auto; background: var(--color-base-100); box-shadow: -12px 0 30px -18px rgba(0,0,0,.35); }
+.ui-map__panel[hidden] { display: none; }
+.ui-map__close { position: absolute; top: 8px; right: 8px; }
+.ui-map__dt { margin: 14px 0 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 50%, transparent); }
+.ui-map__list { display: flex; flex-direction: column; gap: 4px; }
+.ui-map__go { text-align: left; padding: 5px 8px; border: 1px solid var(--color-base-300); border-radius: 8px; background: var(--color-base-200); font-size: 12.5px; cursor: pointer; }
+.ui-map__go:hover { border-color: color-mix(in oklab, var(--color-base-content) 40%, transparent); }
+@media (max-width: 820px) { /* the Logic tab (libs/apps logic.ts): a block scheme's nodes — start/end pills, steps, a question, an outcome, the trigger, a milestone */
+.ui-logic { display: flex; align-items: center; gap: 10px; padding: 6px 14px; overflow: hidden; border: 1.5px solid var(--color-base-300); border-radius: 12px; background: var(--color-base-100); font-size: 12.5px; line-height: 1.25; box-shadow: 0 1px 2px rgba(20,24,40,.05), 0 8px 20px -14px rgba(20,24,40,.3); }
+.ui-logic__title, .ui-logic__sub { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-logic__title { -webkit-line-clamp: 2; }
+.ui-logic__sub { -webkit-line-clamp: 2; }
+.ui-logic--step .ui-logic__title { -webkit-line-clamp: 1; }
+.ui-logic > i { flex: none; font-size: 18px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+.ui-logic__title { font-weight: 600; line-height: 1.25; }
+.ui-logic__sub { font-size: 11px; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); margin-top: 1px; }
+.ui-logic--start, .ui-logic--end, .ui-logic--mile { justify-content: center; border-radius: 999px; font-weight: 700; }
+.ui-logic--start { border-color: var(--color-base-content); }
+.ui-logic--end { border-color: var(--color-error); color: var(--color-error); }
+.ui-logic--end > i { color: var(--color-error); }
+.ui-logic--mile { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+.ui-logic--trigger { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+.ui-logic--trigger > i, .ui-logic--trigger .ui-logic__sub { color: color-mix(in oklab, var(--color-base-100) 70%, transparent); }
+.ui-logic--q { border-color: var(--color-warning); background: color-mix(in oklab, var(--color-warning) 10%, var(--color-base-100)); }
+.ui-logic--q > i { color: var(--color-warning); }
+.ui-logic--out { border-style: dashed; justify-content: center; text-align: center; }
+.ui-map__panel { width: 100%; } }
+
+/* Scobes — the pathway spine: compact cards the diagram engine lays out */
+.ui-scobe { padding: 7px 14px; border: 1.5px solid var(--color-base-300); border-radius: 10px; background: var(--color-base-100); text-align: center; font-size: 12.5px; line-height: 1.25; box-shadow: 0 1px 2px rgba(20,24,40,.05), 0 8px 20px -14px rgba(20,24,40,.3); display: flex; flex-direction: column; justify-content: center; }
+.ui-scobe__sub { font-family: var(--font-mono, ui-monospace); font-size: 10px; letter-spacing: .04em; color: color-mix(in oklab, var(--color-base-content) 50%, transparent); }
+.ui-scobe__name { font-weight: 600; }
+.ui-scobe--q { border-style: dashed; border-color: var(--color-primary); color: var(--color-primary); background: color-mix(in oklab, var(--color-primary) 6%, var(--color-base-100)); }
+.ui-scobe--mile { border-color: var(--color-base-content); background: var(--color-base-content); color: var(--color-base-100); }
+.ui-scobe--mile .ui-scobe__sub { color: color-mix(in oklab, var(--color-base-100) 60%, transparent); }
+.ui-scobe--end { border-color: var(--color-error); color: var(--color-error); background: color-mix(in oklab, var(--color-error) 7%, var(--color-base-100)); }
+/* The alarm branch — a red flag, an urgent review, ED — wears red without
+ * meaning "the pathway ends here": same tint as an end, its own name. */
+.ui-scobe--alert { border-color: var(--color-error); color: var(--color-error); background: color-mix(in oklab, var(--color-error) 7%, var(--color-base-100)); }
+.ui-scobe--alert .ui-scobe__sub { color: color-mix(in oklab, var(--color-error) 70%, black); opacity: .8; }
+.ui-scobe--loop { border-style: dashed; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); box-shadow: none; }
+
+/* A signal is worn, not implied. A row (ui.row, a ui.table line, anything
+ * marked by the kit) whose `status` says trouble is tinted by the kit itself,
+ * so the agent that marked the state correctly has colored it already — the
+ * shortest correct markup is the visible one. The words are the record's own:
+ * red for what is wrong now, amber for what needs a look. `data-status` values
+ * outside this list ("active", "building", "page"…) are markers, not tones,
+ * and stay undecorated. */
+[data-status="danger"], [data-status="abnormal"], [data-status="overdue"], [data-status="red-flag"] {
+  background: color-mix(in oklab, var(--color-error) 7%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-error);
+}
+[data-status="warning"], [data-status="flagged"], [data-status="due"] {
+  background: color-mix(in oklab, var(--color-warning) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+
+/* Whose move a scobe card is — the patient's tinted like their portal, the
+ * clinician's like the EHR, the system's plain. The tint is the only thing the
+ * canvas adds; the full instruction (who does what, until what) lives in the
+ * step drawer, so the drawing stays quiet. */
+.ui-scobe--patient { border-color: #3b82f6; background: color-mix(in oklab, #3b82f6 7%, var(--color-base-100)); }
+.ui-scobe--patient .ui-scobe__sub { color: #1e3a8a; opacity: .75; }
+.ui-scobe--clinician { border-color: var(--color-primary); background: color-mix(in oklab, var(--color-primary) 7%, var(--color-base-100)); }
+.ui-scobe--clinician .ui-scobe__sub { color: color-mix(in oklab, var(--color-primary) 80%, black); opacity: .85; }
+
+/* A date is one word: "2026-05-04" broken after a hyphen is not a date
+ * anybody can read, and <time> is the tag a date already wears. */
+time { white-space: nowrap; }
+
+/* A form that re-renders itself must not be a scroll anchor. A kit form posts
+ * on change and swaps itself (outerHTML); with the pressed control focused,
+ * Chrome's scroll anchoring "compensates" for the old form leaving the DOM and
+ * throws the pane to its very bottom — one answered question, and the patient
+ * is staring at the Submit button. Excluding the form's subtree from anchor
+ * candidates removes the jump; anchoring elsewhere on the page is untouched. */
+form[data-form], [data-form] form { overflow-anchor: none; }

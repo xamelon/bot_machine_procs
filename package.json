@@ -1,0 +1,48 @@
+{
+  "name": "procs",
+  "version": "0.1.0",
+  "module": "src/$main.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/$main.ts",
+    "./test": "./src/$test.ts",
+    "./boot": "./src/procs/boot/load.ts"
+  },
+  "scripts": {
+    "start": "bun 'src/$main.ts'",
+    "repl": "bun script/repl.ts",
+    "cli": "bun script/cli.ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "happy-dom": "^20.11.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/typography": "^0.5.20",
+    "daisyui": "^5.7.14",
+    "htmx.org": "4.0.0-beta6",
+    "shiki": "^4.3.1",
+    "tailwindcss": "^4.3.3"
+  },
+  "procs": {
+    "prod": {
+      "procs/log": {},
+      "procs/db": {
+        "url": ".runtime/procs.sqlite"
+      },
+      "procs/migrate": {},
+      "bot": {},
+      "procs/repl": {},
+      "procs/http": {
+        "port": 3000
+      }
+    },
+    "modules": []
+  }
+}
