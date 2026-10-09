@@ -1,0 +1,1 @@
+{ "title": "Outbox", "icon": "ph-paper-plane-tilt", "group": "Activity", "permission": "bot.view", "order": 30, "open": "/bot/outbox" }

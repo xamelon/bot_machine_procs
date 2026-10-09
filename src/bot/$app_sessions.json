@@ -1,0 +1,1 @@
+{ "title": "Sessions", "icon": "ph-stack", "group": "Activity", "permission": "bot.view", "order": 10, "open": "/bot/sessions" }

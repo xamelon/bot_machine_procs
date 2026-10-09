@@ -1,0 +1,1 @@
+{ "title": "Flows", "icon": "ph-share-network", "group": "Bot", "permission": "bot.view", "order": 20, "open": "/bot/flows" }

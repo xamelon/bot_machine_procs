@@ -1,0 +1,1 @@
+{ "title": "Inbox", "icon": "ph-tray", "group": "Activity", "permission": "bot.view", "order": 20, "open": "/bot/inbox" }

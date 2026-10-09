@@ -5,4 +5,5 @@ export type State = {
     recovered?: boolean;
     inboxTimer?: ReturnType<typeof setInterval>;
     outboxTimer?: ReturnType<typeof setInterval>;
+    apps?: Record<string, { title: string; icon?: string; group?: string; permission?: string; order?: number; open: string; name: string }>;
 };

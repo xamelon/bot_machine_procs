@@ -1,0 +1,1 @@
+{ "title": "Chats", "icon": "ph-chats", "group": "Bot", "permission": "bot.view", "order": 40, "open": "/bot/chats" }

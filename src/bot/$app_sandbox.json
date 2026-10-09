@@ -1,0 +1,1 @@
+{ "title": "Sandbox", "icon": "ph-chat-circle", "group": "Test", "permission": "bot.view", "order": 10, "open": "/bot/sandbox" }

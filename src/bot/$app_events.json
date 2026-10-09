@@ -1,0 +1,1 @@
+{ "title": "Events", "icon": "ph-clock", "group": "Activity", "permission": "bot.view", "order": 50, "open": "/bot/events" }

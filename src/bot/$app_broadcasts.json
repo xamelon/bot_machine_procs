@@ -1,0 +1,1 @@
+{ "title": "Broadcasts", "icon": "ph-megaphone", "group": "Activity", "permission": "bot.view", "order": 40, "open": "/bot/broadcasts" }

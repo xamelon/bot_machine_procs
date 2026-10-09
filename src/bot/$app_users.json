@@ -1,0 +1,1 @@
+{ "title": "Users", "icon": "ph-users", "group": "Bot", "permission": "bot.view", "order": 30, "open": "/bot/users" }

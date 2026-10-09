@@ -1,0 +1,1 @@
+{ "title": "Triggers", "icon": "ph-lightning", "group": "Setup", "permission": "bot.view", "order": 10, "open": "/bot/triggers" }

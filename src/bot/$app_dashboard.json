@@ -1,0 +1,1 @@
+{ "title": "Dashboard", "icon": "ph-squares-four", "group": "Bot", "permission": "bot.view", "order": 10, "open": "/bot" }

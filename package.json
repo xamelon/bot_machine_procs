@@ -23,10 +23,17 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/typography": "^0.5.20",
+    "@xyflow/react": "^12.12.0",
+    "dagre": "^0.8.5",
     "daisyui": "^5.7.14",
     "htmx.org": "4.0.0-beta6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "shiki": "^4.3.1",
     "tailwindcss": "^4.3.3"
   },
