@@ -9,9 +9,11 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
         for (const message of ctx.fns.bot.pending({ limit: opts?.limit ?? 20 })) {
             const row = ctx.fns.procs.db.select({ sql: "SELECT * FROM bot_channel_connections WHERE id = ?", params: [message.bot_channel_connection_id] })[0];
             const connection = row ? { ...row, credentials: JSON.parse(row.credentials || "{}"), config: JSON.parse(row.config || "{}") } : null;
-            const result = await ctx.fns.procs.hooks.first({ name: `bot.adapter.${message.channel}`, opts: { phase: "send", message, connection } });
+            const payload = connection ? await ctx.fns.bot.prepareMedia({ connection, payload: message.payload }) : message.payload;
+            const result = await ctx.fns.procs.hooks.first({ name: `bot.adapter.${message.channel}`, opts: { phase: "send", message: { ...message, payload }, connection } });
             if (!result) { skipped++; ctx.fns.bot.failOutbox({ id: message.id, error: `unknown channel ${message.channel}`, retryAfter: 60 }); continue; }
             if (result.ok === false) { failed++; ctx.fns.bot.failOutbox({ id: message.id, error: String(result.error ?? "send failed"), retryAfter: result.retryAfter }); continue; }
+            if (connection && result.fileIds) ctx.fns.bot.rememberMedia({ connectionId: connection.id, payload: message.payload, refs: result.fileIds });
             ctx.fns.bot.ack({ id: message.id, externalMessageId: result.externalMessageId });
             sent++;
         }

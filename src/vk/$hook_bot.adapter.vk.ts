@@ -5,6 +5,7 @@ const API_VERSION = "5.199";
 export default async function (ctx: Context, _session: Session | null, opts: any) {
     if (opts.phase === "parse") return parse(ctx, opts.body, opts.connection);
     if (opts.phase === "send") return send(opts.connection, opts.message?.payload ?? opts.message);
+    if (opts.phase === "preparePhoto") return uploadFile(opts.connection, opts.path, opts.peerId);
     if (opts.phase === "provision") return provision(ctx, opts.connection, opts.waitMs ?? 15_000);
 }
 
@@ -86,6 +87,24 @@ async function provision(ctx: Context, connection: any, waitMs: number) {
     const settings = await vk(token, "groups.setCallbackSettings", { group_id: String(groupId), server_id: String(serverId), message_new: "1", v: API_VERSION });
     if (settings.ok === false) return { ok: false, error: settings.error, credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
     return { ok: true, externalId: String(groupId), credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) }, config: { webhook_url: url, provision_status: "active" } };
+}
+
+async function uploadFile(connection: any, path: string, peerId: string) {
+    const token = connection?.credentials?.group_access_token;
+    if (!token) return { ok: false, error: "VK credentials are not configured" };
+    const file = Bun.file(path);
+    if (!(await file.exists())) return { ok: false, error: "local photo is missing" };
+    const upload = await vk(token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
+    if (upload.ok === false) return upload;
+    const form = new FormData();
+    form.append("photo", file);
+    const uploadedRes = await fetch(upload.response.upload_url, { method: "POST", body: form });
+    const uploaded: any = await uploadedRes.json().catch(() => ({}));
+    if (!uploadedRes.ok || !uploaded.hash) return { ok: false, error: "VK photo upload failed" };
+    const saved = await vk(token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
+    if (saved.ok === false) return saved;
+    const photo = saved.response?.[0];
+    return photo ? { ref: `photo${photo.owner_id}_${photo.id}` } : { ok: false, error: "VK save photo returned invalid response" };
 }
 
 async function resolveAttachment(token: string, peerId: string, attachment: any) {

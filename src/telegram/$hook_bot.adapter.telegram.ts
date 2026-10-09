@@ -71,7 +71,10 @@ async function post(token: string, method: string, body: any) {
         body: JSON.stringify(strip(body)),
     });
     const json: any = await res.json().catch(() => ({}));
-    if (res.ok && json.ok) return { ok: true, externalMessageId: String(json.result?.message_id ?? Date.now()) };
+    if (res.ok && json.ok) {
+        const photo = Array.isArray(json.result?.photo) ? json.result.photo.at(-1)?.file_id : undefined;
+        return { ok: true, externalMessageId: String(json.result?.message_id ?? Date.now()), fileIds: photo ? [photo] : undefined };
+    }
     const retryAfter = json.parameters?.retry_after ?? json.retry_after;
     return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter };
 }
