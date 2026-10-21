@@ -1,31 +1,26 @@
 {
   "name": "procs",
-  "version": "0.1.0",
-  "module": "src/$main.ts",
-  "type": "module",
   "private": true,
-  "exports": {
-    ".": "./src/$main.ts",
-    "./test": "./src/$test.ts",
-    "./boot": "./src/procs/boot/load.ts"
-  },
+  "type": "module",
   "scripts": {
-    "start": "bun 'src/$main.ts'",
+    "start": "bun supervisor/start.ts",
+    "start:runtime": "bun 'src/$main.ts'",
     "repl": "bun script/repl.ts",
     "cli": "bun script/cli.ts",
     "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "happy-dom": "^20.11.1"
-  },
-  "peerDependencies": {
+    "happy-dom": "^20.11.1",
     "typescript": "^5"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@earendil-works/chord": "1.2.0",
+    "@earendil-works/pi-ai": "1.2.0",
+    "@earendil-works/pi-durable": "1.2.0",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/typography": "^0.5.20",
     "@xyflow/react": "^12.12.0",
@@ -41,15 +36,15 @@
     "prod": {
       "procs/log": {},
       "procs/db": {
-        "url": ".runtime/procs.sqlite"
+        "url": ".runtime/bot.sqlite"
       },
       "procs/migrate": {},
       "bot": {},
       "procs/repl": {},
+      "procs/styles": {},
       "procs/http": {
-        "port": 3000
+        "port": 4100
       }
-    },
-    "modules": []
+    }
   }
 }

@@ -13,7 +13,7 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
         // it, and dying at ten seconds looks like a hang with no line in the log.
         idleTimeout: 120,
         port,
-        hostname: "0.0.0.0",
+        hostname: ctx.fns.procs.config.resolve({ module: "procs/http" }).hostname,
         async fetch(req) {
             const t0 = performance.now();
             const url = new URL(req.url);
@@ -53,19 +53,22 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
                     // back — for anything that reads HTML. A fetch still gets
                     // four bytes and the status.
                     const wantsHtml = (req.headers.get("accept") ?? "").includes("text/html");
-                    return stamp(wantsHtml
-                        ? rctx.fns.procs.http.toResponse({ value: rctx.fns.procs.ui.notFound({ url: url.pathname }) })
-                        : new Response("Not Found", { status: 404 }));
+                    return stamp(await rctx.fns.procs.http.respond({
+                        response: wantsHtml
+                            ? rctx.fns.procs.http.toResponse({ value: rctx.fns.procs.ui.notFound({ url: url.pathname }) })
+                            : new Response("Not Found", { status: 404 }),
+                        req,
+                    }));
                 }
                 const raw = await m.handler(rctx, rctx.session, { req, params: m.params });
-                const res = rctx.fns.procs.http.toResponse({ value: raw });
+                const res = await rctx.fns.procs.http.respond({ response: rctx.fns.procs.http.toResponse({ value: raw }), req });
                 log(rctx, logFile, req.method, url.pathname + url.search, res.status, performance.now() - t0);
                 return stamp(res);
             } catch (e: any) {
                 log(rctx, logFile, req.method, url.pathname + url.search, 500, performance.now() - t0, e?.message);
                 // One 500 for the socket and for dispatch: HTML readers get a
                 // page, everybody else the developer's text — procs.http.crashed.
-                return stamp(rctx.fns.procs.http.crashed({ error: e, req }));
+                return stamp(await rctx.fns.procs.http.respond({ response: rctx.fns.procs.http.crashed({ error: e, req }), req }));
             }
         },
     });

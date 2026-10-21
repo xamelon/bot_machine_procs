@@ -49,10 +49,9 @@ export default async function (
         // session to decide between a document and a fragment, and the base ctx has
         // none — so wrapping there quietly returned the whole page to every htmx
         // caller, and no test could see the difference.
-        return rctx.fns.procs.http.toResponse({ value: raw });
+        return await rctx.fns.procs.http.respond({ response: rctx.fns.procs.http.toResponse({ value: raw }), req });
     } catch (e: any) {
         // Same 500 contract as the real server (http/$start.ts) — dispatch is
         // "the same path minus the socket", so a throwing handler is a Response.
-        return rctx.fns.procs.http.crashed({ error: e, req });
-    }
+        return rctx.fns.procs.http.crashed({ error: e, req });    }
 }

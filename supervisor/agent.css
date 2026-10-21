@@ -1,0 +1,18 @@
+.bot-workbench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); min-height: 100dvh; }
+.bot-workbench > main { min-width: 0; }
+.agent-panel { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; border-left: 1px solid var(--color-asx-border, #ddd); background: var(--color-asx-background-body, #fafafa); font: inherit; }
+.agent-panel header { display: flex; gap: 12px; align-items: center; padding: 16px; border-bottom: 1px solid var(--color-asx-border, #ddd); }
+.agent-panel header a { margin-left: auto; text-decoration: underline; }
+.agent-panel header span { font-size: 12px; }
+.agent-messages { flex: 1; overflow: auto; padding: 16px; }
+.agent-message { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+.agent-message[data-role=user] { padding: 10px 12px; background: var(--color-asx-background-muted, #eee); border-radius: 6px; }
+.agent-message small { display: block; font-weight: 600; margin-bottom: 4px; }
+.agent-panel form { padding: 16px; border-top: 1px solid var(--color-asx-border, #ddd); }
+.agent-panel label { display: block; margin-bottom: 8px; }
+.agent-panel textarea { width: 100%; padding: 8px; border: 1px solid var(--color-asx-border, #ddd); border-radius: 6px; background: inherit; resize: vertical; }
+.agent-panel form > div { display: flex; gap: 12px; margin-top: 8px; }
+.agent-panel button { padding: 6px 12px; border: 1px solid var(--color-asx-border, #ddd); border-radius: 6px; }
+.agent-panel [role=alert] { padding: 12px; color: var(--color-asx-text-primary); }
+.agent-panel :focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (max-width: 800px) { .bot-workbench { grid-template-columns: 1fr; } .agent-panel { position: relative; height: 65dvh; border-left: 0; border-top: 1px solid var(--color-asx-border, #ddd); } }

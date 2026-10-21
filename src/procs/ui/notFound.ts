@@ -22,10 +22,10 @@ export default function (ctx: Context, _session: Session | null, opts: { what?: 
         main: ctx.fns.procs.ui.page({
             page: "not-found",
             title: "Not found",
-            main: ctx.fns.procs.ui.notice({
+            main: ctx.fns.procs.ui.banner({
                 tone: "warning",
-                text: what ? `There is no ${what}.` : "There is nothing at this address.",
-            }) + (opts.url ? `<p class="mt-2 text-2xs text-text-tertiary"><span class="font-mono">${esc(opts.url)}</span></p>` : "")
+                body: what ? `There is no ${what}.` : "There is nothing at this address.",
+            }) + (opts.url ? `<p class="mt-2 text-xs text-[var(--color-asx-text-secondary)]"><span class="font-mono">${esc(opts.url)}</span></p>` : "")
                 + (back
                     ? `<p class="mt-4"><a class="ui-focusable text-2xs text-text-link hover:underline" href="${esc(back.href)}"
                            hx-get="${esc(back.href)}" hx-target="#main" hx-swap="innerHTML" hx-push-url="true"

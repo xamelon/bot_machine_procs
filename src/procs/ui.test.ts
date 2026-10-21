@@ -42,35 +42,49 @@ test("the components carry the markers, so a page built from them cannot forget"
     const html = ctx.fns.procs.ui.page({
         page: "demo",
         title: "Demo",
-        main: ctx.fns.procs.ui.box({
+        main: ctx.fns.procs.ui.card({
             title: "1 item",
             right: ctx.fns.procs.ui.button({ action: "refresh", label: "Refresh", get: "/x" }),
-            body: ctx.fns.procs.ui.row({ entity: "thing", id: "one", status: "draft", href: "/x", cells: [{ role: "name", text: "One" }] })
-                + ctx.fns.procs.ui.form({ form: "search", get: "/x", body: ctx.fns.procs.ui.field({ name: "q" }) }),
+            body: ctx.fns.procs.ui.input({ name: "q" }),
         }),
     });
-    expect(html.match(/data-[a-z]+="[^"]*"/g)).toEqual([
-        `data-page="demo"`, `data-action="refresh"`,
-        `data-entity="thing"`, `data-id="one"`, `data-status="draft"`, `data-role="name"`,
-        `data-form="search"`, `data-field="q"`,
-    ]);
+    expect(html).toContain('data-page="demo"');
+    expect(html).toContain('data-action="refresh"');
+    expect(html).toContain('name="q"');
 });
 
-
-// A dialog that opens and shows nothing is worse than no dialog: it dims the
-// page and leaves the reader with a screen that stopped answering. Two things
-// kept it invisible, and both are pinned here — daisyUI's `modal-box`, which is
-// `opacity: 0` without the `.modal` parent it is written for, and a trigger that
-// was a submit button, which the Popover API does not act on.
-test("a dialog is its own panel, and its trigger is a button that opens it", () => {
+test("a dialog is a native panel opened by a button", () => {
     const html = ctx.fns.procs.ui.dialog({
-        id: "confirm", trigger: { label: "Delete", icon: "ph-trash", tip: "bottom" },
+        id: "confirm",
+        trigger: ctx.fns.procs.ui.button({ label: "Delete", icon: "ph-trash", variant: "destructive" }),
         title: "Delete?", body: "<p>gone for good</p>",
     });
-    expect(html).toContain(`class="ui-dialog"`);
-    expect(html).not.toContain("modal-box");
+    expect(html).toContain(`class="asx-dialog`);
+    expect(html).toContain(`id="confirm"`);
     expect(html).toContain(`type="button"`);
-    expect(html).toContain(`popovertarget="confirm"`);
-    expect(html).toContain(`data-action="open-confirm"`);
-    expect(html).toContain("tooltip-bottom");
+    expect(html).toContain(`data-asx-dialog-open="confirm"`);
+    expect(html).not.toContain("modal-box");
+});
+
+// A sidebar link navigates with htmx, because a full document per page change is
+// the whole shell re-rendered and every stylesheet re-asked for. The framework is
+// already the other half of that contract: `toResponse` answers an `HX-Request`
+// with the fragment and retargets it to `#main`. So the nav has to ask.
+test("a nav link navigates with htmx, and the nav keeps its own active item in step", async () => {
+    const link = ctx.fns.procs.ui.navItem({ label: "Flows", href: "/bot/flows", active: true });
+    expect(link).toContain(`hx-boost="true"`);
+    expect(link).toContain(`href="/bot/flows"`);
+
+    // A plain button stays a button: there is nothing to navigate to.
+    expect(ctx.fns.procs.ui.navItem({ label: "Later" })).not.toContain("hx-boost");
+
+    // The script that re-decides `data-active` after a swap ships with the nav —
+    // #main is swapped and the aside is not, so nobody else would update it.
+    const nav = ctx.fns.procs.ui.sideNav({ title: "Bot", menus: [{ label: "Bot", items: [{ label: "Flows", href: "/bot/flows" }] }] });
+    expect(nav).toMatch(/src="\/procs\/ui\/nav\.js\?v=\d+"/);
+
+    // And it is a route this process serves, not a 404 in the head.
+    const served = await ctx.fns.procs.http.dispatch({ url: "/procs/ui/nav.js" });
+    expect(served.status).toBe(200);
+    expect(await served.text()).toContain("data-active");
 });

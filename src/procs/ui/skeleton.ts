@@ -1,8 +1,7 @@
-// A placeholder while something loads — grey bars that shimmer. Pair it with an
-// htmx hx-indicator so it shows only during a request.
-export default function (ctx: Context, _session: Session | null, opts?: { lines?: number; class?: string }): string {
-    const n = opts?.lines ?? 3;
-    return `<div class="space-y-2 ${opts?.class ?? ""}" ${ctx.fns.procs.ui.attr({ role: "skeleton" })} aria-hidden="true">
-  ${Array.from({ length: n }, (_, i) => `<div class="skeleton h-3" style="width:${[100, 80, 90, 70][i % 4]}%"></div>`).join("")}
-</div>`;
+export default function (ctx: Context, _session: Session | null, opts: {
+    width?: string; height?: string; radius?: "inner" | "element" | "container" | "full"; lines?: number; class?: string;
+}) {
+    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    const one = (i = 0) => `<span class="asx-skeleton ${esc(opts.class ?? "")}" data-radius="${esc(opts.radius ?? "element")}" style="${opts.width ? `width:${esc(opts.width)};` : ""}${opts.height ? `height:${esc(opts.height)};` : ""}${i && i === (opts.lines ?? 1) - 1 ? "width:70%;" : ""}"></span>`;
+    return opts.lines && opts.lines > 1 ? `<span class="asx-skeleton-stack">${Array.from({length: opts.lines}, (_, i) => one(i)).join("")}</span>` : one();
 }

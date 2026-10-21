@@ -13,7 +13,12 @@ export default async function (ctx: Context, _session: Session | null, opts: { e
             // is how a leftover file from an older layout shadowed every build
             // that came after it.
             const path = await rctx.fns.procs.styles.build(style);
-            return new Response(Bun.file(path), { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-store" } });
+            // `no-cache`, not `no-store`: the sheet is 240 KB and changes only when
+            // the code does, so the browser keeps it and revalidates (304) instead of
+            // fetching it again on every navigation. Revalidating is what keeps live
+            // reload correct — watch.ts rebuilds the sheet, and the new bytes carry a
+            // new ETag.
+            return new Response(Bun.file(path), { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-cache" } });
         };
         styles.push(style);
         ctx.fns.procs.log.debug({ event: "load.style", msg: style.href, from: `${entry.root}/${entry.rel}` });

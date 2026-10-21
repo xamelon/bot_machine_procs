@@ -5,8 +5,8 @@
 //   ctx.fns.procs.dev.build({})           → dist/app.js
 //   bun dist/app.js                 → runs standalone, anywhere
 const MAIN_TEMPLATE = `// AUTO-GENERATED prod entry - Bun.build bundles this + everything it imports.
-import { makeCtx } from "procs";
-import { apply } from "procs/boot";
+import { makeCtx } from "../../src/$main";
+import { apply } from "../../src/procs/boot/load";
 import { entries, modules, startOrder } from "./manifest";
 
 const ctx = makeCtx();

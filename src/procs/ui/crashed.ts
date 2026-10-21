@@ -15,8 +15,8 @@ export default function (ctx: Context, _session: Session | null, opts: { id: str
         main: ctx.fns.procs.ui.page({
             page: "crashed",
             title: "Something went wrong",
-            main: `${ctx.fns.procs.ui.notice({ tone: "danger", text: `This action could not finish. It has been recorded — mention code ${opts.id} if you report it.` })}
-${dev && opts.message ? `<details class="mt-3 text-sm"><summary class="text-base-content/50 cursor-pointer">details for the developer</summary><pre class="bg-base-200 mt-2 overflow-x-auto rounded p-3 text-xs">${esc(opts.message)}</pre></details>` : ""}`,
+            main: `${ctx.fns.procs.ui.banner({ tone: "error", body: `This action could not finish. It has been recorded — mention code ${opts.id} if you report it.` })}
+${dev && opts.message ? `<details class="mt-3 text-sm"><summary class="cursor-pointer text-[var(--color-asx-text-secondary)]">details for the developer</summary><pre class="mt-2 overflow-x-auto rounded bg-[var(--color-asx-background-muted)] p-3 text-xs">${esc(opts.message)}</pre></details>` : ""}`,
         }),
     };
 }

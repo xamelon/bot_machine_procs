@@ -1,10 +1,35 @@
-// A multi-line input — a note, a comment. `name` submits with a form; `field`
-// only marks it for UI/test/client code. Usually they are the same, but a GET
-// form must not serialize a huge editor just because it is on screen.
-export default function (ctx: Context, _session: Session | null, opts: {name?: string; field?: string; value?: string; placeholder?: string; rows?: number; class?: string; ariaLabel?: string; maxlength?: number }): string {
+export default function (ctx: Context, _session: Session | null, opts: {
+    name: string;
+    label: string;
+    value?: string;
+    placeholder?: string;
+    rows?: number;
+    description?: string;
+    required?: boolean;
+    optional?: boolean;
+    labelHidden?: boolean;
+    disabled?: boolean;
+    readonly?: boolean;
+    width?: string | number;
+    status?: { type: "warning" | "error" | "success"; message?: string; messageID?: string };
+    statusVariant?: "attached" | "detached" | "tooltip";
+    class?: string;
+}) {
     const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
-    const field = opts.field ?? opts.name;
-    return `<textarea ${opts.name ? `name="${esc(opts.name)}" ` : ""}${ctx.fns.procs.ui.attr({ field })}${opts.ariaLabel ? ` aria-label="${esc(opts.ariaLabel)}"` : ""} rows="${opts.rows ?? 3}"${opts.maxlength != null ? ` maxlength="${opts.maxlength}"` : ""}
-  placeholder="${esc(opts.placeholder ?? "")}"
-  class="ui-input textarea textarea-sm w-full resize-y ${opts.class ?? ""}">${esc(opts.value ?? "")}</textarea>`;
+    const id = `asx-text-area-${Math.random().toString(36).slice(2)}`;
+    const control = `<span class="asx-text-area-wrap"><textarea id="${esc(id)}" class="asx-input asx-textarea" data-size="md" name="${esc(opts.name)}"${opts.placeholder ? ` placeholder="${esc(opts.placeholder)}"` : ""}${opts.rows ? ` rows="${esc(opts.rows)}"` : ""}${opts.disabled ? " disabled" : ""}${opts.readonly ? " readonly" : ""}${opts.required ? " required" : ""}>${esc(opts.value ?? "")}</textarea></span>`;
+    return ctx.fns.procs.ui.field({
+        label: opts.label,
+        description: opts.description,
+        control,
+        inputID: id,
+        required: opts.required,
+        optional: opts.optional,
+        labelHidden: opts.labelHidden,
+        disabled: opts.disabled,
+        status: opts.status,
+        statusVariant: opts.statusVariant,
+        width: opts.width,
+        class: opts.class,
+    });
 }

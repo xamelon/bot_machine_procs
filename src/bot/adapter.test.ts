@@ -96,3 +96,60 @@ test("vk send uploads a photo url before messages.send", async () => {
     } finally { globalThis.fetch = original; }
     expect(calls.some((url) => url.includes("messages.send"))).toBe(true);
 });
+
+test("max parses private messages and callbacks", async () => {
+    const message = await ctx.fns.procs.hooks.first({
+        name: "bot.adapter.max",
+        opts: { phase: "parse", body: { update_type: "message_created", timestamp: 1, chat_id: 42, message: { body: { mid: "m1", text: "/start q" }, sender: { user_id: 9, first_name: "Ada", username: "ada" } } } },
+    });
+    expect(message.idempotencyKey).toBe("max:1:m1");
+    expect(message.input).toMatchObject({ channel: "max", external_id: "42", text: "/start q", start_param: "q", display_name: "Ada" });
+
+    const callback = await ctx.fns.procs.hooks.first({
+        name: "bot.adapter.max",
+        opts: { phase: "parse", body: { update_type: "message_callback", timestamp: 2, chat_id: 42, callback: { callback_id: "c1", payload: "go", user: { user_id: 9 } } } },
+    });
+    expect(callback.input).toMatchObject({ channel: "max", external_id: "42", text: "go", payload: "go" });
+});
+
+test("max sends text with inline keyboard", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: any, init: any) => {
+        expect(String(url)).toBe("https://platform-api2.max.ru/messages?chat_id=42");
+        expect(init.headers.Authorization).toBe("m");
+        expect(JSON.parse(init.body)).toMatchObject({
+            text: "choose",
+            attachments: [{ type: "inline_keyboard", payload: { buttons: [[{ type: "callback", text: "Go", payload: "go" }]] } }],
+        });
+        return new Response(JSON.stringify({ message: { body: { mid: "m2" } } }));
+    }) as any;
+    try {
+        const result = await ctx.fns.procs.hooks.first({
+            name: "bot.adapter.max",
+            opts: { phase: "send", connection: { credentials: { access_token: "m" } }, message: { payload: { external_id: "42", text: "choose", buttons: [{ label: "Go", payload: "go" }] } } },
+        });
+        expect(result).toEqual({ ok: true, externalMessageId: "m2" });
+    } finally { globalThis.fetch = original; }
+});
+
+test("max provision stores webhook and secret", async () => {
+    const saved = ctx.fns.bot.saveConnection({ channel: "max", name: "MAX", publicId: "max1", credentials: { access_token: "m" } });
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: any, init: any) => {
+        const path = String(url);
+        if (path.endsWith("/subscriptions")) {
+            const body = JSON.parse(String(init.body));
+            expect(body.url).toBe("https://bot.example/bot/webhook/max/max1");
+            expect(body.update_types).toContain("message_created");
+            return new Response(JSON.stringify({ success: true }));
+        }
+        return new Response(JSON.stringify({ user_id: 7, username: "max_bot", first_name: "Max" }));
+    }) as any;
+    try {
+        expect(await ctx.fns.bot.provision({ publicId: "max1", waitMs: 0 })).toMatchObject({ ok: true });
+    } finally { globalThis.fetch = original; }
+    const row = ctx.fns.procs.db.select({ sql: "SELECT * FROM bot_channel_connections WHERE id = ?", params: [saved.id] })[0];
+    expect(row.external_id).toBe("max_bot");
+    expect(JSON.parse(row.config).webhook_url).toBe("https://bot.example/bot/webhook/max/max1");
+    expect(JSON.parse(row.credentials).webhook_secret).toBe("max_max1");
+});

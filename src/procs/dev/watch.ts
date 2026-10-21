@@ -7,23 +7,37 @@
 //   fn     → hot-load into ctx.fns (+ genTypes)
 //   route  → http.loadRoutes
 //   type   → genTypes
-//   script · style → http.loadRoutes
+//   script · style → http.loadRoutes; a style also rebuilds the stylesheet
 // …and anything that changes what a page renders ends with events.reload(), which
 // is a misnomer now: the browser re-requests the current URL into `#main` rather
 // than reloading, so the chat, this event stream and every open tab survive it.
 // Errors (syntax etc.) are logged + recorded on the error board, old version
 // keeps running.
-import { watch } from "node:fs";
+import { watch, type FSWatcher } from "node:fs";
+import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { collectStateFile, dottedName, isLoaded } from "../boot/load";
 
+const IGNORE = /^(_runtime|_test_.*|_tmp_.*|tmp_.*)$/;
+
 export default async function (ctx: Context, _session: Session | null, _opts?: {}) {
     const st = ctx.state as any;
-    if (st.watcher) return { watching: 'already' };
+    if (st.watcher) return { watching: "already" };
 
-    // Watch the APP's src (== proc's core when running proc itself), so an app
-    // booting proc as a dependency watches its own files, not proc's.
-    const srcDir = resolve(ctx.fns.procs.project.projectRoot({}), 'src');
+    // The process itself: the app's src, and the framework src when procs is a
+    // dependency. A mounted package that is not this process is still not watched.
+    // Resolve real paths so shared source directories are not watched twice.
+    const modules = await ctx.fns.procs.modules.discover({});
+    const roots: string[] = [];
+    const seen = new Set<string>();
+    for (const root of modules) {
+        if (!root.self || !root.dir) continue;
+        const dir = await realpath(root.dir).catch(() => root.dir);
+        if (seen.has(dir)) continue;
+        seen.add(dir);
+        roots.push(dir);
+    }
+
     const pending = new Set<string>();
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -31,19 +45,18 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
         timer = null;
         const batch = [...pending];
         pending.clear();
-        let needTypes = false, needRoutes = false, needReload = false;
+        let needTypes = false, needRoutes = false, needReload = false, needStyles = false;
 
         // macOS FSEvents can collapse "new dir + files inside" into one event
         // on the dir — expand directory events into their contained files.
         const files: string[] = [];
-        for (const rel of batch) {
-            const abs = srcDir + '/' + rel;
+        for (const abs of batch) {
             const stat = await Bun.file(abs).stat().catch(() => null);
             if (stat?.isDirectory()) {
-                const glob = new Bun.Glob('**/*');
-                for await (const sub of glob.scan(abs)) files.push(rel + '/' + sub);
+                const glob = new Bun.Glob("**/*");
+                for await (const sub of glob.scan(abs)) files.push(abs + "/" + sub);
             } else {
-                files.push(rel);
+                files.push(abs);
             }
         }
 
@@ -52,23 +65,27 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
         // writes files (agent, editor) sees load failures on the next call.
         const errors: Map<string, string> = ((ctx.state.procs.dev ??= {}).errors ??= new Map());
 
-        for (const rel of files) {
+        for (const abs of files) {
+            const root = roots.find(dir => abs === dir || abs.startsWith(dir + "/"));
+            if (!root) continue;
+            const rel = abs.slice(root.length + 1);
             const entry = ctx.fns.procs.project.classify({ rel });
-            if (entry.kind === 'skip') continue;
-            const exists = await Bun.file(srcDir + '/' + rel).exists();
+            if (entry.kind === "skip") continue;
+            const exists = await Bun.file(abs).exists();
             if (!exists) { errors.delete(rel); needTypes = true; continue; } // deleted: types only, fn stays in memory
             try {
-                if (entry.kind === 'fn') {
+                if (entry.kind === "fn") {
                     await ctx.fns.procs.repl.load({ name: dottedName(entry) });
                     needTypes = true;
                     needReload = true;
-                } else if (entry.kind === 'route' || entry.kind === 'script' || entry.kind === 'style') {
+                } else if (entry.kind === "route" || entry.kind === "script" || entry.kind === "style") {
                     needRoutes = true;
                     needReload = true;
-                } else if (entry.kind === 'type') {
+                    if (entry.kind === "style") needStyles = true;
+                } else if (entry.kind === "type") {
                     needTypes = true;
                 } else if (isLoaded(ctx, entry.kind)) {
-                    await collectStateFile(ctx, entry, srcDir + "/" + rel);
+                    await collectStateFile(ctx, entry, abs);
                     needTypes = true; // config slots show up in CtxState
                 }
                 errors.delete(rel);
@@ -80,6 +97,7 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
 
         try {
             if (needRoutes) await ctx.fns.procs.http.loadRoutes({});
+            if (needStyles) await ctx.fns.procs.styles.rebuild({});
             if (needTypes) await ctx.fns.procs.dev.genTypes({});
             if (needReload) ctx.fns.procs.events.reload({});
         } catch (e: any) {
@@ -87,15 +105,18 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
         }
     };
 
-    const watcher = watch(srcDir, { recursive: true }, (_event, rel) => {
-        if (!rel) return;
-        if (rel.endsWith('.d.ts')) return; // genTypes output — would loop
-        if (rel.split('/').some(s => /^(_runtime|_test_.*|_tmp_.*|tmp_.*)$/.test(s))) return;
-        pending.add(rel);
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => { flush().catch(e => console.error('[watch]', e)); }, 100);
-    });
-    st.watcher = watcher;
-    ctx.fns.procs.log.info({ event: "watch.started", msg: srcDir });
-    return { watching: srcDir };
+    const watchers: FSWatcher[] = [];
+    for (const root of roots) {
+        watchers.push(watch(root, { recursive: true }, (_event, rel) => {
+            if (!rel) return;
+            if (rel.endsWith(".d.ts")) return; // genTypes output — would loop
+            if (rel.split("/").some(s => IGNORE.test(s))) return;
+            pending.add(resolve(root, rel));
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => { flush().catch(e => console.error("[watch]", e)); }, 100);
+        }));
+        ctx.fns.procs.log.info({ event: "watch.started", msg: root });
+    }
+    st.watcher = watchers;
+    return { watching: roots };
 }

@@ -1,31 +1,23 @@
-// The browser half of `ui.toast`. A toast is rendered wherever the fragment
-// put it; on `hyper-load` it is lifted into the one fixed stack at the bottom
-// right (made on first use), shown for `ms`, then taken away — or sooner, when
-// its × is pressed. Nothing here reads state off the page: the fragment says
-// how long, the element carries its own timer.
 (() => {
-    if (window.toast) return;
-    const stack = () => {
-        let el = document.getElementById("ui-toasts");
-        if (!el) {
-            el = document.createElement("div");
-            el.id = "ui-toasts";
-            el.className = "ui-toasts";
-            document.body.appendChild(el);
-        }
-        return el;
-    };
-    window.toast = {
-        show(el, ms) {
-            stack().appendChild(el);
-            clearTimeout(el._toast);
-            el._toast = setTimeout(() => window.toast.hide(el), ms);
-        },
-        hide(el) {
-            if (!el || el.classList.contains("ui-toast--leaving")) return;
-            clearTimeout(el._toast);
-            el.classList.add("ui-toast--leaving");
-            setTimeout(() => el.remove(), 250);
-        },
-    };
+  if (window.__asxToast) return;
+  window.__asxToast = true;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const viewport = () => document.querySelector('[data-asx-toast-viewport]') || document.body.appendChild(Object.assign(document.createElement('div'), {className: 'asx-toast-viewport'}));
+  const dismiss = toast => { toast.dataset.exiting = 'true'; setTimeout(() => toast.remove(), 180); };
+  document.addEventListener('click', e => {
+    const trigger = e.target.closest('[data-asx-toast-trigger]');
+    if (!trigger) {
+      const close = e.target.closest('[data-asx-toast-close]');
+      if (close) dismiss(close.closest('.asx-toast'));
+      return;
+    }
+    const toast = document.createElement('div');
+    toast.className = 'asx-toast';
+    toast.dataset.type = trigger.dataset.type || 'info';
+    const action = trigger.dataset.actionLabel ? '<button class="asx-toast__action" type="button">' + esc(trigger.dataset.actionLabel) + '</button>' : '';
+    toast.innerHTML = '<div class="asx-toast__content">' + esc(trigger.dataset.message || '') + '</div>' + action + '<button class="asx-toast__close" type="button" data-asx-toast-close aria-label="Dismiss">×</button>';
+    viewport().appendChild(toast);
+    const ms = Number(trigger.dataset.autohide || 0);
+    if (ms > 0) setTimeout(() => toast.isConnected && dismiss(toast), ms);
+  });
 })();

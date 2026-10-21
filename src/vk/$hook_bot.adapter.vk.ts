@@ -4,8 +4,8 @@ const API_VERSION = "5.199";
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
     if (opts.phase === "parse") return parse(ctx, opts.body, opts.connection);
-    if (opts.phase === "send") return send(opts.connection, opts.message?.payload ?? opts.message);
-    if (opts.phase === "preparePhoto") return uploadFile(opts.connection, opts.path, opts.peerId);
+    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message);
+    if (opts.phase === "preparePhoto") return uploadFile(ctx, opts.connection, opts.path, opts.peerId);
     if (opts.phase === "provision") return provision(ctx, opts.connection, opts.waitMs ?? 15_000);
 }
 
@@ -34,12 +34,12 @@ function parse(ctx: Context, body: any, connection: any) {
     };
 }
 
-async function send(connection: any, payload: any) {
+async function send(ctx: Context, connection: any, payload: any) {
     const token = connection?.credentials?.group_access_token;
     if (!token) return { ok: false, error: "VK credentials are not configured", retryAfter: 60 };
     const refs: string[] = [];
     for (const attachment of (payload.attachments ?? []).slice(0, 10)) {
-        const ref = await resolveAttachment(token, payload.external_id, attachment);
+        const ref = await resolveAttachment(ctx, token, payload.external_id, attachment);
         if (ref?.ok === false) return ref;
         if (ref) refs.push(ref);
     }
@@ -52,7 +52,7 @@ async function send(connection: any, payload: any) {
     const keyboard = vkKeyboard(payload.button_rows ?? payload.buttons ?? [], payload.keyboard_mode ?? "inline", payload.buttons_per_row ?? 3);
     if (keyboard) form.keyboard = keyboard;
     if (refs.length) form.attachment = refs.join(",");
-    const json = await vk(token, "messages.send", form);
+    const json = await vk(ctx, token, "messages.send", form);
     if (json.ok === false) return json;
     if (typeof json.response === "number" || typeof json.response === "string") return { ok: true, externalMessageId: String(json.response) };
     return { ok: false, error: "VK send returned invalid response", retryAfter: 60 };
@@ -67,7 +67,7 @@ async function provision(ctx: Context, connection: any, waitMs: number) {
     if (!groupId) return { ok: false, error: "Group ID is required" };
     if (!base) return { ok: false, error: "PUBLIC_BASE_URL is required" };
     const url = `${base}/bot/webhook/vk/${connection.public_id}`;
-    const code = await vk(token, "groups.getCallbackConfirmationCode", { group_id: String(groupId), v: API_VERSION });
+    const code = await vk(ctx, token, "groups.getCallbackConfirmationCode", { group_id: String(groupId), v: API_VERSION });
     if (code.ok === false) return code;
     const confirmation = code.response?.code;
     const secret = creds.callback_secret || createHash("sha256").update(`${connection.public_id}:${Date.now()}`).digest("hex").slice(0, 32);
@@ -75,43 +75,43 @@ async function provision(ctx: Context, connection: any, waitMs: number) {
         sql: "UPDATE bot_channel_connections SET credentials = ?, updated_at = ? WHERE id = ?",
         params: [JSON.stringify({ ...creds, confirmation_code: confirmation, callback_secret: secret, confirmation_received_at: null }), new Date().toISOString(), connection.id],
     });
-    const listed = await vk(token, "groups.getCallbackServers", { group_id: String(groupId), v: API_VERSION });
+    const listed = await vk(ctx, token, "groups.getCallbackServers", { group_id: String(groupId), v: API_VERSION });
     const found = (listed.response?.items ?? []).find((server: any) => server.url === url || String(server.id) === String(creds.callback_server_id));
     const server = found
-        ? await vk(token, "groups.editCallbackServer", { group_id: String(groupId), server_id: String(found.id), url, title: "bot", secret_key: secret, v: API_VERSION })
-        : await vk(token, "groups.addCallbackServer", { group_id: String(groupId), url, title: "bot", secret_key: secret, v: API_VERSION });
+        ? await vk(ctx, token, "groups.editCallbackServer", { group_id: String(groupId), server_id: String(found.id), url, title: "bot", secret_key: secret, v: API_VERSION })
+        : await vk(ctx, token, "groups.addCallbackServer", { group_id: String(groupId), url, title: "bot", secret_key: secret, v: API_VERSION });
     if (server.ok === false) return { ok: false, error: server.error, credentials: { confirmation_code: confirmation, callback_secret: secret } };
     const serverId = found?.id ?? server.response?.server_id;
     const confirmed = await waitConfirmed(ctx, connection.id, waitMs);
     if (!confirmed) return { ok: false, error: "VK did not confirm callback URL", credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
-    const settings = await vk(token, "groups.setCallbackSettings", { group_id: String(groupId), server_id: String(serverId), message_new: "1", v: API_VERSION });
+    const settings = await vk(ctx, token, "groups.setCallbackSettings", { group_id: String(groupId), server_id: String(serverId), message_new: "1", v: API_VERSION });
     if (settings.ok === false) return { ok: false, error: settings.error, credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
     return { ok: true, externalId: String(groupId), credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) }, config: { webhook_url: url, provision_status: "active" } };
 }
 
-async function uploadFile(connection: any, path: string, peerId: string) {
+async function uploadFile(ctx: Context, connection: any, path: string, peerId: string) {
     const token = connection?.credentials?.group_access_token;
     if (!token) return { ok: false, error: "VK credentials are not configured" };
     const file = Bun.file(path);
     if (!(await file.exists())) return { ok: false, error: "local photo is missing" };
-    const upload = await vk(token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
+    const upload = await vk(ctx, token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
     if (upload.ok === false) return upload;
     const form = new FormData();
     form.append("photo", file);
     const uploadedRes = await fetch(upload.response.upload_url, { method: "POST", body: form });
     const uploaded: any = await uploadedRes.json().catch(() => ({}));
     if (!uploadedRes.ok || !uploaded.hash) return { ok: false, error: "VK photo upload failed" };
-    const saved = await vk(token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
+    const saved = await vk(ctx, token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
     if (saved.ok === false) return saved;
     const photo = saved.response?.[0];
     return photo ? { ref: `photo${photo.owner_id}_${photo.id}` } : { ok: false, error: "VK save photo returned invalid response" };
 }
 
-async function resolveAttachment(token: string, peerId: string, attachment: any) {
+async function resolveAttachment(ctx: Context, token: string, peerId: string, attachment: any) {
     if (attachment?.type !== "photo") return null;
     if (attachment.ref) return attachment.ref;
     if (!attachment.url) return null;
-    const upload = await vk(token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
+    const upload = await vk(ctx, token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
     if (upload.ok === false) return upload;
     const image = await fetch(attachment.url);
     if (!image.ok) return { ok: false, error: `image fetch failed with HTTP ${image.status}`, retryAfter: 60 };
@@ -121,21 +121,20 @@ async function resolveAttachment(token: string, peerId: string, attachment: any)
     const uploadedRes = await fetch(upload.response.upload_url, { method: "POST", body: form });
     const uploaded: any = await uploadedRes.json().catch(() => ({}));
     if (!uploadedRes.ok || !uploaded.hash) return { ok: false, error: "VK photo upload failed", retryAfter: 60 };
-    const saved = await vk(token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
+    const saved = await vk(ctx, token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
     if (saved.ok === false) return saved;
     const photo = saved.response?.[0];
     return photo ? `photo${photo.owner_id}_${photo.id}` : { ok: false, error: "VK save photo returned invalid response", retryAfter: 60 };
 }
 
-async function vk(token: string, method: string, params: Record<string, string>) {
-    const res = await fetch(`https://api.vk.com/method/${method}`, {
+async function vk(ctx: Context, token: string, method: string, params: Record<string, string>) {
+    const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'vk', url: `https://api.vk.com/method/${method}`, init: {
         method: "POST",
         headers: { authorization: `Bearer ${token}`, "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(params),
-    });
+    } });
     const json: any = await res.json().catch(() => ({}));
-    if (json.error?.error_code && [6, 9, 29, 129].includes(json.error.error_code)) return { ok: false, error: json.error.error_msg || "VK flood control", retryAfter: 2 };
-    if (!res.ok || json.error) return { ok: false, error: json.error?.error_msg || `VK HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: res.status === 429 ? 2 : 60 };
+    if (!res.ok || json.error) return { ok: false, error: json.error?.error_msg || `VK HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? 60, rateLimited: pause !== undefined };
     return json;
 }
 

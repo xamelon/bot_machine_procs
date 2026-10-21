@@ -534,9 +534,11 @@ test("htmx is served by the framework, not fetched from a CDN", async () => {
 
     // Every asset the layout links is a route this process serves: the head is
     // written in the framework's own names (`/procs/…`), not the ones from before
-    // the move, so nothing in the load path 404s.
+    // the move, so nothing in the load path 404s. `/_control/` is the one link
+    // that is not this process's: it is the supervisor's recovery page, served by
+    // the process in front of this one, so it is not here to answer.
     for (const url of [...page.matchAll(/(?:src|href)="(\/[^"]+)"/g)].map(m => m[1]!))
-        expect([url, (await ctx.fns.procs.http.dispatch({ url })).status]).toEqual([url, 200]);
+        if (url !== "/_control/") expect([url, (await ctx.fns.procs.http.dispatch({ url })).status]).toEqual([url, 200]);
 });
 
 // ─── $loaders ─────────────────────────────────────────────────────────────────

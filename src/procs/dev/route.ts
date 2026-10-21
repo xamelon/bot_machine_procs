@@ -56,7 +56,7 @@ export default async function (ctx: Context, session: Session, opts: { req: Requ
         main: ctx.fns.procs.ui.page({
             page: ${JSON.stringify(heading.toLowerCase().replace(/[^a-z0-9]+/g, "-"))},
             title: ${JSON.stringify(heading)},
-            main: ctx.fns.procs.ui.box({ title: "nothing here yet", empty: "", body: "" }),
+            main: ctx.fns.procs.ui.card({ title: "nothing here yet", body: "" }),
         }),
     };
 }
@@ -70,7 +70,7 @@ function post(url: string): string {
 // with an \`hx-location\` naming THIS address — the one the reader is on.
 export default async function (ctx: Context, session: Session, opts: { req: Request; params: Record<string, string> }) {
     const form = await opts.req.formData();
-    return new Response(ctx.fns.procs.ui.notice({ tone: "success", text: "Saved." }), {
+    return new Response(ctx.fns.procs.ui.banner({ tone: "success", body: "Saved." }), {
         headers: { "content-type": "text/html; charset=utf-8" },
     });
 }

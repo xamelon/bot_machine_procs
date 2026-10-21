@@ -1,15 +1,13 @@
-// Page through a long list. `href(page)` builds the link for each page, so the
-// page you are on is in the URL and shareable; prev/next disable at the ends.
-export default function (ctx: Context, _session: Session | null, opts: {page: number; pages: number; href: (page: number) => string }): string {
+export default function (ctx: Context, _session: Session | null, opts: {
+    page: number; total: number; href?: string; target?: string; class?: string;
+}) {
     const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
-    if (opts.pages <= 1) return "";
-    // daisyUI pages a list with `join` — the buttons sit flush as one control.
-    const link = (p: number, label: string, on = false, disabled = false) => disabled
-        ? `<button class="join-item btn btn-sm" disabled>${esc(label)}</button>`
-        : `<a class="join-item btn btn-sm ${on ? "btn-active btn-primary" : ""}" href="${esc(opts.href(p))}" hx-get="${esc(opts.href(p))}" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">${esc(label)}</a>`;
-    const nums: string[] = [];
-    for (let p = 1; p <= opts.pages; p++) nums.push(link(p, String(p), p === opts.page));
-    return `<nav class="join" ${ctx.fns.procs.ui.attr({ role: "pagination" })}>
-  ${link(opts.page - 1, "‹ Prev", false, opts.page <= 1)}${nums.join("")}${link(opts.page + 1, "Next ›", false, opts.page >= opts.pages)}
-</nav>`;
+    const page = Math.max(1, opts.page);
+    const total = Math.max(1, opts.total);
+    const url = (p: number) => opts.href ? `${opts.href}${opts.href.includes("?") ? "&" : "?"}page=${p}` : "#";
+    const item = (p: number, label = String(p), disabled = false) => `<a class="asx-pagination__item" data-current="${p === page ? "true" : "false"}" aria-current="${p === page ? "page" : "false"}" ${disabled ? `aria-disabled="true"` : `href="${esc(url(p))}"${opts.href ? ` hx-get="${esc(url(p))}" hx-target="${esc(opts.target ?? "#main")}" hx-swap="innerHTML" hx-push-url="true"` : ""}`}> ${esc(label)} </a>`;
+    const nums = Array.from(new Set([1, page - 1, page, page + 1, total].filter(p => p >= 1 && p <= total))).sort((a,b) => a-b);
+    let last = 0;
+    const body = nums.map(p => { const gap = p - last > 1 ? `<span class="asx-pagination__ellipsis">…</span>` : ""; last = p; return gap + item(p); }).join("");
+    return `<nav class="asx-pagination ${esc(opts.class ?? "")}" aria-label="Pagination">${item(page - 1, "‹", page <= 1)}${body}${item(page + 1, "›", page >= total)}</nav>`;
 }

@@ -24,6 +24,13 @@ async function buildScript(abs: string, fileName: string, runtimeDir: string): P
     const out = await Bun.build({
         entrypoints: [abs], outdir, naming: key + ext,
         target: "browser", format: ext === ".css" ? "esm" : "iife", minify: true, sourcemap: "none",
+        // Browser IIFE cannot contain `import.meta`. React-family deps read `import.meta.env`.
+        define: {
+            "import.meta.env": '{"MODE":"production","PROD":true,"DEV":false}',
+            "import.meta.env.MODE": '"production"',
+            "import.meta.env.PROD": "true",
+            "import.meta.env.DEV": "false",
+        },
     });
     if (!out.success) throw new Error(out.logs.map(log => log.message).join("\n") || "bundle failed");
     const first = out.outputs[0];

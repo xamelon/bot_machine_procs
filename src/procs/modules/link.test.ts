@@ -9,7 +9,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, lstatSync, readlinkSync, realpathSync, existsSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { testCtx } from "procs/test";
+import { testCtx } from "../../$test";
 
 const ctx = await testCtx();
 
@@ -23,7 +23,7 @@ function scene() {
     writeFileSync(join(folder, "SKILL.md"), "# Vitals\n");
     const at = join(workdir, ".claude", "skills", "vitals");
     const codex = join(workdir, ".agents", "skills", "vitals");
-    return { workdir, folder, at, codex, run: ctx.fns.procs.env.fork({ mode: "test", env: { ...ctx.env, WORKDIR: workdir } }) };
+    return { workdir, folder, at, codex, run: ctx.fns.procs.env.fork({ mode: "test", env: { ...ctx.env, WORKDIR: workdir, PROCS_PATH: home, PROCS_PLUGINS: "" } }) };
 }
 
 test("turning a plugin on links its folder into the project's skills", async () => {
@@ -122,7 +122,7 @@ test("a plugin linked into the project is not discovered again through its link"
     const vitals = roots.filter((r: any) => r.name === "vitals");
     expect(vitals.length).toBeLessThanOrEqual(1);
     // …and if it is there at all, it is the real folder, not the link.
-    if (vitals[0]) expect(vitals[0].folder).toBe(folder);
+    if (vitals[0]) expect(vitals[0].folder).toBe(realpathSync(folder));
     expect(workdir).toBeTruthy();
 });
 

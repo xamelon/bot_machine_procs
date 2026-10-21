@@ -20,9 +20,9 @@ export default async function (ctx: Context, _session: Session | null, opts: {me
     const failed = Object.entries((ctx.state.procs.lifecycle?.failed ?? {}) as Record<string, string>);
 
     const trouble = failed.length
-        ? ctx.fns.procs.ui.notice({
-            tone: "danger",
-            text: `did not start: ${failed.map(([name, why]) => `${name} — ${why}`).join(" · ")}`,
+        ? ctx.fns.procs.ui.banner({
+            tone: "error",
+            body: `did not start: ${failed.map(([name, why]) => `${name} — ${why}`).join(" · ")}`,
         })
         : "";
 
@@ -77,13 +77,13 @@ export default async function (ctx: Context, _session: Session | null, opts: {me
         lead: `A module is a folder: its functions are a library, a <span class="font-mono">GET /namespace</span> route makes it a tab, a <span class="font-mono">SKILL.md</span> makes it a skill for the agent. The workspace's own are always on; the rest are named in <span class="font-mono">workspace.json</span>.`,
         main: `
 ${trouble ? `<div class="mt-4">${trouble}</div>` : ""}
-${opts.error ? `<div class="mt-4">${ctx.fns.procs.ui.notice({ text: opts.error, tone: "danger" })}</div>` : ""}
-${opts.message ? `<div class="mt-4">${ctx.fns.procs.ui.notice({ text: opts.message, tone: "success" })}</div>` : ""}
-${ctx.fns.procs.ui.box({ class: "mt-4", title: `${mounted.length} on`, body: mounted.map(module).join(""), empty: "no plugins on — the catalogue is below" })}
-${missing.length ? ctx.fns.procs.ui.box({ class: "mt-4", title: `${missing.length} declared, not mounted`, body: missing.map(gap).join(""), empty: "" }) : ""}
-${ctx.fns.procs.ui.box({ class: "mt-4", title: `${catalog.length} available — off`, body: catalog.map(available).join(""), empty: "every module on this machine is already on" })}
+${opts.error ? `<div class="mt-4">${ctx.fns.procs.ui.banner({ body: opts.error, tone: "error" })}</div>` : ""}
+${opts.message ? `<div class="mt-4">${ctx.fns.procs.ui.banner({ body: opts.message, tone: "success" })}</div>` : ""}
+${ctx.fns.procs.ui.card({ class: "mt-4", title: `${mounted.length} on`, body: mounted.map(module).join("") || "no plugins on — the catalogue is below" })}
+${missing.length ? ctx.fns.procs.ui.card({ class: "mt-4", title: `${missing.length} declared, not mounted`, body: missing.map(gap).join("") }) : ""}
+${ctx.fns.procs.ui.card({ class: "mt-4", title: `${catalog.length} available — off`, body: catalog.map(available).join("") || "every module on this machine is already on" })}
 
-${ctx.fns.procs.ui.box({
+${ctx.fns.procs.ui.card({
             class: "mt-4", title: `${parts.length} always on — this process`,
             // The same rows as everything above, not a run of names in a
             // paragraph: these are the modules a person is most likely to want
@@ -92,11 +92,6 @@ ${ctx.fns.procs.ui.box({
             body: parts.map(module).join(""),
         })}
 
-${ctx.fns.procs.ui.form({
-            form: "module-add", post: "/procs/modules/add", class: "mt-4 flex items-center gap-2",
-            body: ctx.fns.procs.ui.field({ name: "name", placeholder: "name", class: "w-40" })
-                + ctx.fns.procs.ui.field({ name: "git", placeholder: "https://github.com/acme/module (leave empty for a platform module)" })
-                + ctx.fns.procs.ui.button({ action: "add", label: "Add", tone: "primary" }),
-        })}`,
+<form class="mt-4 flex items-center gap-2" ${ctx.fns.procs.ui.attr({ form: "module-add" })} hx-post="/procs/modules/add" hx-target="#main" hx-swap="innerHTML">${ctx.fns.procs.ui.input({ name: "name", placeholder: "name", class: "w-40" })}${ctx.fns.procs.ui.input({ name: "git", placeholder: "https://github.com/acme/module (leave empty for a platform module)" })}${ctx.fns.procs.ui.button({ action: "add", label: "Add", variant: "primary", type: "submit" })}</form>`,
     });
 }

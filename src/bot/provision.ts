@@ -7,7 +7,9 @@ export default async function (ctx: Context, _session: Session | null, opts: { p
         name: `bot.adapter.${connection.channel}`,
         opts: { phase: "provision", connection, waitMs: opts.waitMs },
     });
-    if (!result) throw new Error(`unknown channel ${connection.channel}`);
+    // A channel like `echo` answers parse/send but has nothing to register —
+    // that is a state to report, not a crash.
+    if (!result) return { ok: false, error: `${connection.channel} has no provisioning step`, publicId: opts.publicId };
     const now = new Date().toISOString();
     const credentials = { ...connection.credentials, ...(result.credentials ?? {}) };
     const config = { ...connection.config, ...(result.config ?? {}), last_provision_error: result.ok === false ? String(result.error ?? "provision failed") : null };

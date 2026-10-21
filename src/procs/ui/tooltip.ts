@@ -1,6 +1,6 @@
-// A hint on hover or focus — a label for an icon button, the full text of a
-// truncated cell. daisyUI's `tooltip` draws the bubble from `data-tip`, CSS only.
-export default function (ctx: Context, _session: Session | null, opts: {label: string; children: string; class?: string }): string {
+export default function (ctx: Context, _session: Session | null, opts: {
+    content: string; trigger: string; placement?: "top" | "bottom" | "left" | "right"; class?: string;
+}) {
     const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
-    return `<span class="tooltip ${opts.class ?? ""}" tabindex="0" data-tip="${esc(opts.label)}">${opts.children}</span>`;
+    return `<span class="asx-tooltip ${esc(opts.class ?? "")}" data-placement="${esc(opts.placement ?? "top")}">${opts.trigger}<span class="asx-tooltip__bubble" role="tooltip">${esc(opts.content)}</span></span>`;
 }

@@ -17,15 +17,12 @@ export default function (ctx: Context, _session: Session | null, opts: {title?: 
 <title>${esc(opts.title ?? "procs")}</title>
 <link rel="icon" href="/procs/ui/favicon.svg" type="image/svg+xml">
 <script src="${ctx.fns.procs.ui.asset({ href: "/procs/ui/htmx.js" })}" defer></script>
-<script src="${ctx.fns.procs.ui.asset({ href: "/procs/ui/combobox.js" })}" defer></script>
-<script src="${ctx.fns.procs.ui.asset({ href: "/procs/ui/select.js" })}" defer></script>
-<script src="${ctx.fns.procs.ui.asset({ href: "/procs/ui/menu.js" })}" defer></script>
 <script src="${ctx.fns.procs.ui.asset({ href: "/procs/ui/toast.js" })}" defer></script>
 ${(ctx.state.procs?.styles ?? []).map((s: any) => `<link data-css rel="stylesheet" href="${esc(s.href)}">`).join("\n")}
 ${[...new Set((ctx.state.procs?.modules ?? []).flatMap((m: any) => m.clients ?? []))].map((src: any) => `<script src="${esc(ctx.fns.procs.ui.asset({ href: src }))}" defer></script>`).join("\n")}
 ${opts.headExtra ?? ""}
 </head>
-<body class="min-h-screen bg-base-200 text-base-content text-sm">
+<body class="min-h-screen bg-[var(--color-asx-background-body)] text-[var(--color-asx-text-primary)] text-sm">
 <main id="main" class="p-6">${opts.main}</main>
 </body>
 </html>`;

@@ -1,12 +1,12 @@
 const API = "https://api.telegram.org";
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
-    if (opts.phase === "parse") return parse(opts.body, opts.connection);
-    if (opts.phase === "send") return send(opts.connection, opts.message?.payload ?? opts.message);
+    if (opts.phase === "parse") return parse(ctx, opts.body, opts.connection);
+    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message);
     if (opts.phase === "provision") return provision(ctx, opts.connection);
 }
 
-async function parse(body: any, connection: any) {
+async function parse(ctx: Context, body: any, connection: any) {
     if (body?.message) {
         const m = body.message;
         const chat = m.chat?.id;
@@ -19,7 +19,7 @@ async function parse(body: any, connection: any) {
                 external_id: String(chat),
                 text: blank(String(m.text ?? m.caption ?? "").trim()),
                 payload: undefined,
-                attachments: await withFileUrls(connection, telegramPhotos(m)),
+                attachments: await withFileUrls(ctx, connection, telegramPhotos(m)),
             }, m.from)),
         };
     }
@@ -44,39 +44,39 @@ async function parse(body: any, connection: any) {
 
 function ignored() { return { status: 200, body: JSON.stringify({ ok: true, ignored: true }) }; }
 
-async function send(connection: any, payload: any) {
+async function send(ctx: Context, connection: any, payload: any) {
     const token = connection?.credentials?.bot_token;
     if (!token) return { ok: false, error: "Telegram credentials are not configured", retryAfter: 60 };
     const attachments = (payload.attachments ?? []).filter((a: any) => a?.type === "photo");
     const photo = attachments.find((a: any) => a.ref || a.url);
     if (photo) {
-        return post(token, "sendPhoto", {
+        return post(ctx, token, "sendPhoto", {
             chat_id: payload.external_id,
             photo: photo.ref || photo.url,
             caption: payload.text || "",
             reply_markup: keyboard(payload),
-        });
+        }, String(payload.external_id));
     }
-    return post(token, "sendMessage", {
+    return post(ctx, token, "sendMessage", {
         chat_id: payload.external_id,
         text: payload.text || "",
         reply_markup: keyboard(payload),
-    });
+    }, String(payload.external_id));
 }
 
-async function post(token: string, method: string, body: any) {
-    const res = await fetch(`${API}/bot${token}/${method}`, {
+async function post(ctx: Context, token: string, method: string, body: any, recipient?: string) {
+    const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'telegram', url: `${API}/bot${token}/${method}`, recipient, init: {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(strip(body)),
-    });
+    } });
     const json: any = await res.json().catch(() => ({}));
     if (res.ok && json.ok) {
         const photo = Array.isArray(json.result?.photo) ? json.result.photo.at(-1)?.file_id : undefined;
         return { ok: true, externalMessageId: String(json.result?.message_id ?? Date.now()), fileIds: photo ? [photo] : undefined };
     }
-    const retryAfter = json.parameters?.retry_after ?? json.retry_after;
-    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter };
+    const retryAfter = pause ?? json.parameters?.retry_after ?? json.retry_after;
+    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter, rateLimited: pause !== undefined };
 }
 
 async function provision(ctx: Context, connection: any) {
@@ -85,9 +85,9 @@ async function provision(ctx: Context, connection: any) {
     if (!token) return { ok: false, error: "Telegram bot token is required" };
     if (!base) return { ok: false, error: "PUBLIC_BASE_URL is required" };
     const webhookUrl = `${base}/bot/webhook/telegram/${connection.public_id}`;
-    const me = await getJson(token, "getMe");
+    const me = await getJson(ctx, token, "getMe");
     if (!me.ok) return { ok: false, error: me.error, config: { webhook_url: webhookUrl } };
-    const hook = await post(token, "setWebhook", { url: webhookUrl, allowed_updates: ["message", "callback_query"] });
+    const hook = await post(ctx, token, "setWebhook", { url: webhookUrl, allowed_updates: ["message", "callback_query"] });
     if (hook.ok === false) return { ok: false, error: hook.error, config: { webhook_url: webhookUrl } };
     return {
         ok: true,
@@ -96,18 +96,18 @@ async function provision(ctx: Context, connection: any) {
     };
 }
 
-async function getJson(token: string, method: string) {
-    const res = await fetch(`${API}/bot${token}/${method}`);
+async function getJson(ctx: Context, token: string, method: string) {
+    const { response: res } = await ctx.fns.bot.platformFetch({ channel: 'telegram', url: `${API}/bot${token}/${method}` });
     const json: any = await res.json().catch(() => ({}));
     return res.ok && json.ok ? json : { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}` };
 }
 
-async function withFileUrls(connection: any, attachments: any[]) {
+async function withFileUrls(ctx: Context, connection: any, attachments: any[]) {
     const token = connection?.credentials?.bot_token;
     if (!token) return attachments;
     for (const attachment of attachments) {
         if (!attachment.ref || attachment.url) continue;
-        const file = await getJson(token, `getFile?file_id=${encodeURIComponent(attachment.ref)}`);
+        const file = await getJson(ctx, token, `getFile?file_id=${encodeURIComponent(attachment.ref)}`);
         if (file.ok && file.result?.file_path) attachment.url = `${API}/file/bot${token}/${file.result.file_path}`;
     }
     return attachments;

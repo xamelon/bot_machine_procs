@@ -1,9 +1,10 @@
 import { test, expect } from "bun:test";
 import { testCtx } from "../$test";
 
-const ctx = await testCtx();
+const base = await testCtx();
 
 test("migrate: up (in id order, idempotent) + status + down", async () => {
+    const ctx = base.fns.procs.env.fork({ mode: "test" });
     (ctx.state.procs.migrate ??= {}).list = [
         { id: "001_a", up: (c: Context) => c.fns.procs.db.exec({ sql: "CREATE TABLE a (x INTEGER)" }), down: (c: Context) => c.fns.procs.db.exec({ sql: "DROP TABLE a" }) },
         { id: "002_b", up: (c: Context) => c.fns.procs.db.exec({ sql: "CREATE TABLE b (y INTEGER)" }) },
@@ -17,6 +18,6 @@ test("migrate: up (in id order, idempotent) + status + down", async () => {
 });
 
 test("migrate: down on a fresh DB is a no-op (no 'no such table')", async () => {
-    const fresh = ctx.fns.procs.env.fork({ mode: "test" }); // own :memory: db, never migrated
+    const fresh = base.fns.procs.env.fork({ mode: "test" }); // own :memory: db, never migrated
     expect((await fresh.fns.procs.migrate.down({})).rolledBack).toEqual([]);
 });

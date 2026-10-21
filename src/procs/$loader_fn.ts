@@ -31,8 +31,11 @@ export default async function (ctx: Context, _session: Session | null, opts: { e
             continue;
         }
         setPath(ctx.state.registry, [...entry.moduleDir.split("/"), entry.runtimeName], bindSelf(fn, entry.namespace));
-        // This loader runs WHILE the registry is being filled, so `log` may not
-        // exist yet for the first few files — the one place that has to ask.
+    }
+    // Log only after registration: debug may exist before its emit dependency
+    // on filesystems whose iteration order differs (e.g. Linux Docker).
+    for (const entry of opts.entries) {
+        if (entry.moduleDir === ".") continue;
         (ctx.fns as any).procs?.log?.debug?.({ event: "load.fn", msg: dottedName(entry), from: source(entry) });
     }
 }

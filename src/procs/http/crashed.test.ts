@@ -4,7 +4,7 @@
 // "stack trace on a patient's screen" impossible by construction.
 import { test, expect } from "bun:test";
 import { resolve } from "node:path";
-import { testCtx } from "procs/test";
+import { testCtx } from "../../$test";
 
 async function boom(env?: Record<string, string>) {
     const ctx: any = await testCtx({ root: resolve(import.meta.dir, "..", "..", "..", "test-proc") });

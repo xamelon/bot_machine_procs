@@ -8,7 +8,15 @@ import { tmpdir } from "node:os";
 const ctx = await testCtx();
 
 test("lifecycle.order reads package.json proc.prod keys (http last)", async () => {
-    expect(await ctx.fns.procs.lifecycle.order({})).toEqual(["bot", "procs/log", "procs/db", "procs/migrate", "procs/repl", "procs/http"]);
+    // The expected list is the app's own package.json, not a copy of it: the order
+    // IS those keys, and a module added to the app is not a reason for this test to
+    // fail. What the test is about is the one rule the file cannot express — the
+    // server opens last.
+    const pkg = await Bun.file(`${import.meta.dir}/../../package.json`).json();
+    const keys = Object.keys(pkg.procs.prod);
+    const order = await ctx.fns.procs.lifecycle.order({});
+    expect(order).toEqual(keys);
+    expect(order.at(-1)).toBe("procs/http");
 });
 
 // A host mounts modules it did not write. One of them failing to start — a

@@ -1,8 +1,10 @@
-// The bar above a list — something on the left (a title, a filter), actions on
-// the right. Wraps under pressure; carries no markers of its own, it is a frame.
-export default function (_ctx: Context, _session: Session | null, opts: { left?: string; right?: string; class?: string }): string {
-    return `<div class="flex flex-wrap items-center justify-between gap-3 ${opts.class ?? ""}">
-  <div class="flex min-w-0 items-center gap-2">${opts.left ?? ""}</div>
-  <div class="flex shrink-0 items-center gap-2">${opts.right ?? ""}</div>
-</div>`;
+export default function (ctx: Context, _session: Session | null, opts: {
+    start?: string; center?: string; end?: string; size?: "sm" | "md" | "lg"; variant?: "surface" | "muted" | "transparent"; class?: string;
+}) {
+    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    return `<div class="asx-toolbar ${esc(opts.class ?? "")}" data-size="${esc(opts.size ?? "md")}" data-variant="${esc(opts.variant ?? "surface")}" role="toolbar">
+        <div class="asx-toolbar__start">${opts.start ?? ""}</div>
+        ${opts.center ? `<div class="asx-toolbar__center">${opts.center}</div>` : ""}
+        <div class="asx-toolbar__end">${opts.end ?? ""}</div>
+    </div>`;
 }

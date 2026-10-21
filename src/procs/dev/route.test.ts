@@ -4,7 +4,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { testCtx } from "procs/test";
+import { testCtx } from "../../$test";
 
 const ctx = await testCtx();
 

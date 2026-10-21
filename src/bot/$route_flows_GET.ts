@@ -5,9 +5,9 @@ export default function (ctx: Context, _session: Session | null) {
         entity: "flow", rowId: "slug",
         columns: [
             { key: "slug", label: "Slug" }, { key: "name", label: "Name" }, { key: "status", label: "Status" }, { key: "version", label: "Version" },
-            { key: "version_id", label: "Flow", render: (row) => row.version_id ? `<a href="/bot/flows/${row.version_id}">edit</a> <a href="/bot/flows/${row.version_id}/backup">backup</a> <form class="inline" method="post" action="/bot/flows/${row.version_id}/restore" enctype="multipart/form-data"><label>restore<input name="backup" type="file" accept="application/json,.json" hidden onchange="this.form.submit()"></label></form>` : "" },
+            { key: "version_id", label: "Flow", render: (row) => row.version_id ? `<div class="flex flex-wrap gap-2">${ctx.fns.procs.ui.button({ label: "Edit", href: `/bot/flows/${row.version_id}`, size: "sm" })}${ctx.fns.procs.ui.button({ label: "Backup", href: `/bot/flows/${row.version_id}/backup`, size: "sm" })}<form class="inline" method="post" action="/bot/flows/${row.version_id}/restore" enctype="multipart/form-data"><label class="asx-button" data-variant="secondary" data-size="sm">Restore<input name="backup" type="file" accept="application/json,.json" hidden onchange="this.form.submit()"></label></form></div>` : "" },
         ],
         rows, empty: "No flows",
     });
-    return ctx.fns.bot.screen({ page: "bot-flows", title: "Flows", lead: "Published bot flows and editable versions.", main: table });
+    return ctx.fns.bot.screen({ page: "bot-flows", title: "Flows", lead: "Published bot flows and editable versions.", main: ctx.fns.procs.ui.card({ body: table }) });
 }

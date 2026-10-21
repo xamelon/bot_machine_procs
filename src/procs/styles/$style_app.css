@@ -74,17 +74,18 @@
   --text-title: 1.375rem;
   --text-title--line-height: 1.75rem;
 
+  /* Astryx roles: inner 4, element 8, container 12. */
   --radius-sm: 4px;
-  --radius-md: 6px;
+  --radius-md: 8px;
   --radius-lg: 8px;
-  --radius-xl: 10px;
+  --radius-xl: 12px;
   --radius-2xl: 12px;
 
   --shadow-popover: 0 2px 10px rgba(0, 0, 0, 0.08);
   --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
   --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.03), 0 12px 28px -16px rgba(28, 25, 23, 0.1);
   --shadow-lg: 0 1px 2px rgba(28, 25, 23, 0.03), 0 14px 24px -14px rgba(28, 25, 23, 0.16);
-  --shadow-accent: 0 2px 6px -1px rgba(52, 97, 168, 0.4);
+  --shadow-accent: 0 2px 6px -1px oklch(58% 0.18 250 / 0.4);
 
   --tracking-eyebrow: 0.22em;
   --tracking-label: 0.04em;
@@ -122,57 +123,41 @@
  * the mobile-first layout, the safe end to fail towards. */
 #main, [data-role="pane"] { container-type: inline-size; }
 
-/* Three surfaces, not two. daisyUI's light theme puts base-200 two percent off
- * white, which on a bright screen is white — so the harness and the product and
- * the cards on it were all one colour with hairlines drawn between them.
+/* bot_machine palette. Warm gray (hue 70), violet accent (hue 250).
+ * Same specificity as daisyUI's light theme, later in the file, so it wins.
  *
- *   base-200   the HARNESS — the chat column, the tab strip, the chrome
- *   canvas     the PRODUCT's page, a shade lighter, so it reads as the thing
- *              being built rather than as more of the frame around it
- *   base-100   what stands on the page: a card, white, with a light border and
- *              a shadow to lift it off
- *
- * After the plugin's own block on purpose — same specificity, later wins. */
+ *   base-200   page canvas          gray-50
+ *   sidebar    the rail             gray-100
+ *   base-100   a card               near white
+ *   base-300   sunken / hairline    gray-200
+ *   primary    accent-500, flat. secondary is accent-600, same hue, so a
+ *              primary → secondary gradient does not introduce a second brand. */
 :root,
 [data-theme="light"] {
-  --color-base-200: oklch(96.8% 0.001 240);
-  --color-base-300: oklch(92.5% 0.003 240);
+  --color-base-100: oklch(100% 0.003 70);
+  --color-base-200: oklch(98% 0.006 70);
+  --color-base-300: oklch(90% 0.01 70);
+  --color-base-content: oklch(18% 0.006 70);
+  --color-sidebar: oklch(95% 0.008 70);
 
-  /* The brand colour. It was daisyUI's violet — the colour of a developer tool,
-   * on a screen a clinician is meant to work in. Teal reading into blue is what
-   * this trade has always used, and it has the advantage of not being any of
-   * the colours the record itself speaks with: green is "normal", amber is
-   * "check this", red is "abnormal", and a violet that means "our product"
-   * competes with all three for attention.
-   *
-   * `secondary` is the far end of the same sweep rather than a second brand
-   * colour: everything that has a gradient in it runs primary → secondary, so
-   * the two are one thing seen at two angles. */
-  --color-primary: oklch(60% 0.152 196);
-  --color-primary-content: oklch(99% 0.01 196);
-  --color-secondary: oklch(53% 0.168 244);
-  --color-secondary-content: oklch(99% 0.01 244);
+  --color-primary: oklch(58% 0.18 250);
+  --color-primary-content: oklch(98% 0.006 70);
+  --color-secondary: oklch(48% 0.17 250);
+  --color-secondary-content: oklch(98% 0.006 70);
 
-  /* Green is the record's word for "normal" — a resolved problem, a result in
-   * range, an allergy list somebody has actually asked about — so it is read
-   * next to the brand teal all day and it has to sit in the same gamut.
-   * daisyUI's own success is a neon mint (oklch 76% 0.18 163): at that
-   * lightness and chroma it is the brightest thing on a clinical page, which
-   * puts the loudest colour in the interface on the calmest fact in it.
-   * Ours is the same hue family, taken down to the brand's own lightness and
-   * roughly the brand's chroma, so "normal" reads as quiet agreement rather
-   * than as an alarm that happens to be green. */
-  --color-success: oklch(57% 0.115 158);
-  --color-success-content: oklch(99% 0.01 158);
+  --color-success: oklch(52% 0.14 145);
+  --color-success-content: oklch(98% 0.006 70);
+  --color-warning: oklch(58% 0.13 70);
+  --color-warning-content: oklch(18% 0.006 70);
+  --color-error: oklch(50% 0.15 25);
+  --color-error-content: oklch(98% 0.006 70);
+  --color-info: oklch(50% 0.14 250);
+  --color-info-content: oklch(98% 0.006 70);
 
-  /* Blue is "for information" — a booking that has not happened, a note beside
-   * a field — and daisyUI's is a sky blue at 72% lightness, which on white is
-   * pale enough to read as disabled and bright enough to compete with the
-   * brand. `secondary` is already the blue end of our own sweep, so info is
-   * that hue at the lightness green and teal are read at: the three semantic
-   * colours then weigh the same, and none of them outshouts the record's red. */
-  --color-info: oklch(55% 0.13 244);
-  --color-info-content: oklch(99% 0.01 244);
+  /* daisyUI shape dials. depth 0 drops the fake inset. */
+  --radius-field: 8px;
+  --radius-box: 12px;
+  --depth: 0;
 }
 
 /* A soft badge is a tint of its colour on white — 8% in daisyUI's own rule,
@@ -193,20 +178,22 @@
 [data-tone="success"] .btn:not(.btn-primary):not(.btn-ghost) { background: color-mix(in oklab, var(--color-success) 18%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-success) 45%, transparent); color: var(--color-base-content); }
 [data-tone] .btn:not(.btn-primary):not(.btn-ghost):hover { filter: brightness(0.96); }
 
-/* A filled button is the one place the brand is a gradient rather than a colour:
- * it is the single loudest element on a page, and the sweep is what makes it
- * look lit rather than painted. Everything else stays flat — a page of gradients
- * is a page with no hierarchy left.
- *
- * Hover brightens rather than recolours: a background IMAGE cannot be
- * interpolated, so swapping one gradient for another lands in a single frame
- * while the rest of the transition eases. */
-.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link) {
-  background-image: linear-gradient(135deg, var(--color-primary), color-mix(in oklab, var(--color-secondary) 78%, var(--color-primary)));
-  border-color: transparent;
-  transition: filter .2s ease, box-shadow .2s ease, transform .15s ease;
+/* Astryx control shape: flat fill, 8px radius, no border. Press scales. */
+.btn {
+  border-width: 0;
+  border-radius: 8px;
+  font-weight: 500;
+  padding-inline: 12px;
+  box-shadow: none;
 }
-.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):hover { filter: brightness(1.07) saturate(1.05); }
+.btn:active:not(:disabled):not(.btn-disabled) { transform: scale(0.98); }
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link) {
+  background-image: none;
+  background-color: var(--color-primary);
+  border-color: transparent;
+  transition: filter .15s ease, transform .15s ease;
+}
+.btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):hover { filter: brightness(1.06); }
 .btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):active { filter: brightness(0.96); }
 /* …and a disabled one is not lit at all. daisyUI greys the disabled button with
  * background-COLOR, which a background-image paints straight over: the send
@@ -223,7 +210,8 @@
 @theme {
   /* A shade darker than it was: at 98.8% a white card had no edge on it, at
    * 95% it has one and the text on the canvas still reads as on paper. */
-  --color-canvas: oklch(95% 0.002 240);
+  --color-canvas: oklch(98% 0.006 70);
+  --color-sidebar: oklch(95% 0.008 70);
 }
 
 /* Golos Text — the interface typeface, and the one that made the choice: it is
@@ -526,12 +514,13 @@ body.is-picking #page-ring { transition: opacity .1s ease; }
  * lines, and a fixed height cut the second one in half, border through the
  * words. A utility and a component class weigh the same, so without the
  * exclusion whichever came last won, which is not a rule anybody can use. */
-.btn-xs:not(.h-auto), .input-xs, .select-xs, .file-input-xs { height: 1.5rem; min-height: 1.5rem; }
-.btn-sm:not(.h-auto), .input-sm, .select-sm, .file-input-sm { height: 2rem; min-height: 2rem; }
-.btn-lg:not(.h-auto), .input-lg, .select-lg, .file-input-lg { height: 3rem; min-height: 3rem; }
+.btn-xs:not(.h-auto), .input-xs, .select-xs, .file-input-xs { height: 1.75rem; min-height: 1.75rem; }
+.btn-sm:not(.h-auto), .input-sm, .select-sm, .file-input-sm { height: 1.75rem; min-height: 1.75rem; }
+.btn-lg:not(.h-auto), .input-lg, .select-lg, .file-input-lg { height: 2.25rem; min-height: 2.25rem; }
 .btn:not(.btn-xs):not(.btn-sm):not(.btn-lg):not(.btn-block):not(.h-auto),
 .input:not(.input-xs):not(.input-sm):not(.input-lg),
-.select:not(.select-xs):not(.select-sm):not(.select-lg) { height: 2.5rem; min-height: 2.5rem; }
+.select:not(.select-xs):not(.select-sm):not(.select-lg) { height: 2rem; min-height: 2rem; }
+.input, .select, .textarea { border-radius: 8px; }
 
 .ui-input { transition: border-color .15s, box-shadow .15s; }
 /* The focused field, and the one rule that has to beat daisyUI's own. Its
