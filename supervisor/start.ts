@@ -3,6 +3,9 @@ import { resolve } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 
+// TLS may terminate at a tunnel/reverse proxy. Trust only our explicitly
+// configured public origin, never arbitrary Forwarded/X-Forwarded-* headers.
+const publicOrigin = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).origin : null;
 const root = resolve(process.env.APP_ROOT || process.cwd());
 await mkdir(resolve(root, ".runtime/control"), { recursive: true });
 const token = randomBytes(32).toString("hex");
@@ -52,7 +55,9 @@ const server = Bun.serve({ hostname: process.env.SUPERVISOR_HOST || "127.0.0.1",
     }
     // Never expose the runtime REPL through the public proxy.
     if (url.pathname === "/procs/repl" || url.pathname.startsWith("/procs/repl/")) return new Response("Forbidden", { status: 403 });
-    if (!webhook && !["GET", "HEAD"].includes(req.method) && req.headers.get("origin") !== url.origin) return new Response("Invalid origin", { status: 403 });
+    const origin = req.headers.get("origin");
+    const sameOrigin = origin === url.origin || (publicOrigin !== null && origin === publicOrigin);
+    if (!webhook && !["GET", "HEAD"].includes(req.method) && !sameOrigin) return new Response("Invalid origin", { status: 403 });
     if (url.pathname === "/_control/" && req.method === "GET") return new Response(Bun.file(assets), { headers: { "content-type": "text/html" } });
     if (["/_control/agent.js", "/_control/agent.css"].includes(url.pathname) && req.method === "GET") return new Response(Bun.file(resolve(import.meta.dir, url.pathname.endsWith(".js") ? "agent.js" : "agent.css")), { headers: { "content-type": url.pathname.endsWith(".js") ? "text/javascript" : "text/css" } });
     if (url.pathname === "/_control/status" && req.method === "GET") return Response.json(Object.fromEntries(Object.entries(children).map(([k, v]) => [k, { pid: v.proc.pid, state: v.state, restarts: v.restarts }])));

@@ -13,7 +13,7 @@ test("supervisor protects control APIs and recovery survives runtime death", asy
     // measurement. A test about that login must not inherit it: the switch is
     // deleted here, so the child is a supervisor with its door shut whatever the
     // machine is set up for.
-    const env = { ...process.env, APP_ROOT: root, PORT: String(port), CONTROL_PASSWORD: "test-password", OPENAI_API_KEY: "" };
+    const env = { ...process.env, APP_ROOT: root, PORT: String(port), CONTROL_PASSWORD: "test-password", OPENAI_API_KEY: "", PUBLIC_BASE_URL: "https://bot.example.test/" };
     delete (env as any).CONTROL_AUTH;
     const proc = Bun.spawn([process.execPath, join(import.meta.dir, "start.ts")], { cwd: root, env, stdout: "ignore", stderr: "ignore" });
     const base = `http://127.0.0.1:${port}`;
@@ -29,6 +29,15 @@ test("supervisor protects control APIs and recovery survives runtime death", asy
         expect((await fetch(base + "/procs/repl", { headers })).status).toBe(403);
         expect((await fetch(base + "/_agent/submit", { headers, method: "POST", body: "{}" })).status).toBe(403);
         expect((await fetch(base + "/_agent/auth/login", { headers, method: "POST", body: "{}" })).status).toBe(403);
+        // A TLS-terminating tunnel delivers HTTP locally, while the browser's
+        // Origin remains HTTPS. Only the configured public origin is trusted.
+        const channelPost = (extra: Record<string, string>) => fetch(base + "/bot/channels", { method: "POST", headers: { ...headers, ...extra }, body: "" });
+        expect(await (await channelPost({ origin: "https://bot.example.test" })).text()).toBe("runtime");
+        expect((await channelPost({ origin: base })).status).toBe(200);
+        for (const origin of ["https://evil.example", "https://bot.example.test.evil.example", "http://bot.example.test", "null"]) {
+            expect((await channelPost({ origin, "x-forwarded-host": new URL(origin === "null" ? "https://evil.example" : origin).host, "x-forwarded-proto": "https" })).status).toBe(403);
+        }
+        expect((await channelPost({})).status).toBe(403);
         const post = async (path: string, body: unknown) => fetch(base + path, { method: "POST", headers: { ...headers, origin: base, "content-type": "application/json" }, body: JSON.stringify(body) });
         await post("/_agent/auth/login", { providerId: "openai", type: "api_key" });
         await Bun.sleep(20);
