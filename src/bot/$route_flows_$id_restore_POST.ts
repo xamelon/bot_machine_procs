@@ -10,6 +10,6 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
     const issues = ctx.fns.bot.validate({ flow: definition });
     if (issues.length) return new Response(issues.map((issue) => issue.message).join("; "), { status: 422 });
     ctx.fns.bot.save({ name: row.name, definition });
-    const saved = ctx.fns.procs.db.select({ sql: "SELECT id FROM bot_flow_versions v JOIN bot_flows f ON f.id = v.bot_flow_id WHERE f.slug = ? ORDER BY v.version DESC LIMIT 1", params: [definition.id] })[0];
+    const saved = ctx.fns.procs.db.select({ sql: "SELECT v.id FROM bot_flow_versions v JOIN bot_flows f ON f.id = v.bot_flow_id WHERE f.slug = ? ORDER BY v.version DESC LIMIT 1", params: [definition.id] })[0];
     return new Response(null, { status: 303, headers: { location: `/bot/flows/${saved?.id ?? row.id}` } });
 }
