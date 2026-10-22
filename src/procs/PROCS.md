@@ -114,11 +114,13 @@ log migrate modules project repl styles ui`.
 
 ## An app
 
-In this repository the framework and bot are one application: `src/procs/`
-contains core, `src/$main.ts` contains bootstrap, and `src/$test.ts` is the test
-harness. Run `bun run start` for the supervisor or `bun run start:runtime` for
-the runtime alone. Do not install or import a `procs` package; infrastructure
-imports are relative. Optional containers live in `modules/`.
+This repository contains the shared framework and base bot admin. A consuming
+bot mounts it as the `procs/` Git submodule and keeps its own modules in app `src/`.
+Its bootstrap imports `boot` from `../procs/src/$main` and passes the app root.
+Discovery merges core src and app src; config and lifecycle order come from the
+app package.json. Run `bun procs/supervisor/start.ts` from the app root; its
+runtime entry is app `src/$main.ts`, data and credentials stay in app `.runtime/`.
+Install dependencies in both checkouts. Standalone core development also works.
 
 ```jsonc
 // myapp/package.json

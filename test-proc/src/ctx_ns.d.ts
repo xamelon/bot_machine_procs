@@ -312,8 +312,8 @@ declare global {
                 table: Injected<typeof import("../../src/procs/ui/table").default>;
                 tabs: Injected<typeof import("../../src/procs/ui/tabs").default>;
                 text: Injected<typeof import("../../src/procs/ui/text").default>;
-                textArea: Injected<typeof import("../../src/procs/ui/textArea").default>;
                 textInput: Injected<typeof import("../../src/procs/ui/textInput").default>;
+                textarea: Injected<typeof import("../../src/procs/ui/textarea").default>;
                 thumbnail: Injected<typeof import("../../src/procs/ui/thumbnail").default>;
                 timeInput: Injected<typeof import("../../src/procs/ui/timeInput").default>;
                 timer: Injected<typeof import("../../src/procs/ui/timer").default>;

@@ -1,15 +1,13 @@
-# bot_procs
+# bot_procs — shared bot core
 
-A bot and its framework, in one tree. The base for a new bot: `src/procs/` is the framework, `src/bot/` the bot module, `src/telegram|vk|max/` its channel adapters, `src/ui/` the admin shell, `supervisor/` the process in front of both. Boot is `src/$main.ts`; the test harness is `src/$test.ts`.
+This repository is the Git submodule used by individual bots. It ships `src/procs/` (framework), Astryx components, `src/bot/` (base admin and runtime), platform adapters, `src/ui/` (admin shell), assets and `supervisor/`. Keep specific bots' modules, configuration, data and credentials out of this repository.
 
-Read `src/procs/AGENTS.md` and `src/procs/PROCS.md` before changing code.
+Read `src/procs/AGENTS.md` and `src/procs/PROCS.md` before changes. Infrastructure imports are relative; functions call other modules through `ctx.fns`. One file/default export; state under `ctx.state`.
 
-Do not add a `procs` package dependency, package alias, submodule or separate framework checkout. Infrastructure imports use relative paths. Application functions call each other through `ctx.fns`, not imports.
+A host app imports `boot` from `./procs/src/$main` and passes its own root. Discovery composes core src first, then application src. App configuration and start order come from the app's package.json (`procs.prod`); optional containers use `procs.modules`.
 
-Compose an app in the root `package.json` (`procs.prod` is start order). Do not add `workspace.json`. Optional containers live in `modules/`.
+Install core dependencies with `bun install` in this repository. A host runs `bun procs/supervisor/start.ts` from its own root. The supervisor launches the host's `src/$main.ts`; database and credentials stay under the host's `.runtime/`, outside editable src.
 
-`bun run start` runs the supervisor (auth, proxy and recovery worker); `bun run start:runtime` runs only the runtime. Keep the supervisor outside editable `src/`.
+This core also runs standalone via `bun run start`. Run `bun test` here for shared tests, plus each consuming bot's integration tests before updating its gitlink. Commit shared changes here and application-specific changes in the host repository.
 
-## Starting a bot from this tree
-
-The tree is a working bot already: a `welcome` flow, an Echo channel for the sandbox, and the admin at `/bot`. To make it yours, change `procs.prod` in `package.json` (the database url, the port), add your own module next to `src/bot/`, and write its flow in the admin instead of in code — flows are rows, not files.
+Never weaken supervisor auth, Origin checks, REPL isolation or file path validation.

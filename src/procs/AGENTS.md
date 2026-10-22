@@ -1,6 +1,6 @@
-# procs in bot_procs
+# procs — shared bot core
 
-The framework is part of this application, not an npm package. Core is `src/procs/`, bootstrap is `src/$main.ts`, tests use `src/$test.ts`. Read [PROCS.md](./PROCS.md) for the framework contract.
+This repository supplies a shared framework and base bot admin, normally mounted as a Git submodule. Core is `src/procs/`, bootstrap is `src/$main.ts`, tests use `src/$test.ts`. A consuming app calls boot({root}) with its own root and supplies its own src modules. Read [PROCS.md](./PROCS.md) for the framework contract.
 
 - Never import `"procs"`, `"procs/test"` or `"procs/boot"`. Bootstrap/test infrastructure uses relative imports.
 - Application functions call `ctx.fns.<module>.<fn>(opts)` so hot reload can replace them. One file, one default export. State belongs on `ctx.state` under the module's name.
