@@ -7,7 +7,7 @@ Specific bots' modules, configuration, databases and secrets belong to their hos
 ## Use as a submodule
 
 ```sh
-git submodule add -b astryx-base git@github.com:xamelon/bot_machine_procs.git procs
+git submodule add -b main git@github.com:xamelon/bot_machine_procs.git procs
 bun install
 (cd procs && bun install)
 ```
@@ -69,8 +69,8 @@ git add procs
 git commit -m 'Update shared bot core'
 ```
 
-The shared integration branch is currently `astryx-base`, not main. Once merged,
-change the host's `.gitmodules` branch to main explicitly.
+The shared integration branch is `main`. Hosts track it in `.gitmodules`, while
+each host's committed gitlink pins the exact version tested for that bot.
 
 ## Development
 
