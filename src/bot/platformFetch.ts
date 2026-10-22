@@ -4,7 +4,7 @@
 // https://dev.max.ru/docs/chatbots/bots-coding/prepare and /docs-api/methods/POST/messages
 // shortcut: in-flight sends need leases if multiple runtimes share this DB.
 export default async function (ctx: Context, _session: Session | null, opts: {
-    channel: 'telegram' | 'vk' | 'max'; url: string; init?: RequestInit; recipient?: string;
+    channel: 'telegram' | 'vk' | 'max'; url: string; init?: BunFetchRequestInit; recipient?: string;
 }) {
     const config = ctx.fns.procs.config.resolve({ module: 'bot' });
     const interval = opts.channel === 'vk' ? Math.max(51, config.vkRequestMs)

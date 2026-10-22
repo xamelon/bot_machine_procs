@@ -1,4 +1,13 @@
+// MAX uses the Russian Trusted CA chain. Extend trust for this adapter's
+// requests only; retain standard roots and full certificate/hostname checks.
+import { rootCertificates } from "node:tls";
+
 const API = "https://platform-api2.max.ru";
+
+async function maxTls() {
+    const russianCa = await Bun.file(new URL("../../assets/certs/russian-trusted-ca.pem", import.meta.url)).text();
+    return { ca: [...rootCertificates, russianCa], rejectUnauthorized: true };
+}
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
     if (opts.phase === "parse") return parse(opts.req, opts.body, opts.connection);
@@ -73,6 +82,7 @@ async function send(ctx: Context, connection: any, payload: any) {
     if (!token) return { ok: false, error: "MAX access token is not configured", retryAfter: 60 };
     const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'max', url: `${API}/messages?chat_id=${encodeURIComponent(payload.external_id)}`, recipient: String(payload.external_id), init: {
         method: "POST",
+        tls: await maxTls(),
         headers: { Authorization: token, "content-type": "application/json" },
         body: JSON.stringify(strip({
             text: payload.text || "",
@@ -112,6 +122,7 @@ async function provision(ctx: Context, connection: any) {
 async function api(ctx: Context, token: string, path: string, body?: any) {
     const { response: res } = await ctx.fns.bot.platformFetch({ channel: 'max', url: `${API}${path}`, init: {
         method: body ? "POST" : "GET",
+        tls: await maxTls(),
         headers: { Authorization: token, ...(body ? { "content-type": "application/json" } : {}) },
         body: body ? JSON.stringify(body) : undefined,
     } });
