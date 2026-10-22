@@ -38,6 +38,8 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
         roots.push(dir);
     }
 
+    const coreSrc = await realpath(resolve(import.meta.dir, "../.."));
+    const coreFolder = resolve(coreSrc, "..");
     const pending = new Set<string>();
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -111,7 +113,11 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
             if (!rel) return;
             if (rel.endsWith(".d.ts")) return; // genTypes output — would loop
             if (rel.split("/").some(s => IGNORE.test(s))) return;
-            pending.add(resolve(root, rel));
+            const abs = resolve(root, rel);
+            // The nested core has its own watcher; the app watcher must not
+            // interpret its paths as app namespaces or watch its dependencies.
+            if (root !== coreSrc && abs.startsWith(coreFolder + "/")) return;
+            pending.add(abs);
             if (timer) clearTimeout(timer);
             timer = setTimeout(() => { flush().catch(e => console.error("[watch]", e)); }, 100);
         }));

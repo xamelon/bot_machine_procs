@@ -27,7 +27,7 @@ registry.install(await appTools(root));
 const harness = await Harness.open(await openNodeJsonlStorage(resolve(root, ".runtime/agent/session"), context, { fsync: true }), { models, registry }, context);
 const conversation = await harness.root(context, { agent: {
     model: defaultModel,
-    instructions: "You maintain this procs application. Use list/read/edit/write to change app src only. The shared framework and base admin live in the procs Git submodule, outside editable app src; do not copy or modify shared core through application tools. Functions call neighbours through ctx.fns, never import them. One default function per file, state on ctx.state. Ordinary edits hot reload; main/start/stop edits need a runtime restart. Explain changes and limitations honestly.",
+    instructions: "You maintain this procs application. Use list/read/edit/write to change app src only. The shared framework and base admin live in the bot_machine Git submodule (src/bot_machine in consuming apps), excluded from file access; do not copy or modify shared core through application tools. Consuming apps keep their specific code in src/app. Functions call neighbours through ctx.fns, never import them. One default function per file, state on ctx.state. Ordinary edits hot reload; main/start/stop edits need a runtime restart. Explain changes and limitations honestly.",
 } });
 const view = await conversation.viewState(context);
 const selected = () => (view.value.docs["pi.agent"] as any)?.model ?? defaultModel;

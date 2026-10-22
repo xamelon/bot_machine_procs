@@ -7,11 +7,14 @@ import { defineExtension, defineTool } from "@earendil-works/pi-durable";
 export default async function (root: string) {
     root = await realpath(root);
     const src = await realpath(resolve(root, "src"));
+    const core = await realpath(resolve(src, "bot_machine")).catch(() => resolve(src, "bot_machine"));
     async function pathFor(path: string, create = false) {
         const target = resolve(root, path);
         const inside = (p: string) => {
             const rel = relative(src, p);
-            if (rel === ".." || rel.startsWith("../") || isAbsolute(rel)) throw new Error("Only app src/ files are accessible");
+            if (rel === ".." || rel.startsWith("../") || isAbsolute(rel)
+                || p === resolve(src, "bot_machine") || p.startsWith(resolve(src, "bot_machine") + "/")
+                || p === core || p.startsWith(core + "/")) throw new Error("Only app src/ files are accessible");
         };
         inside(target);
         // Resolve each existing ancestor before mkdir/write, refusing symlink escapes.

@@ -1,5 +1,5 @@
 import { Glob } from "bun";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import classify from "./classify";
 import type { ProjectEntry } from "./classify";
 
@@ -35,9 +35,14 @@ export default async function (ctx: Context, session: Session | null, _opts?: {}
         // package or as the app itself. Only a host mounting somebody else's
         // project under a name of its own sets a prefix.
         const ns: string = root.prefix ?? "";
+        // A consuming app may keep the core checkout inside its src. Its
+        // runtime src is mounted separately; never classify the checkout again.
+        const coreRel = relative(root.dir, resolve(import.meta.dir, "../../.."));
+        const nestedCore = coreRel && coreRel !== ".." && !coreRel.startsWith("../") && !isAbsolute(coreRel)
+            ? coreRel + "/" : null;
         const glob = new Glob('**/*');
         for await (const rel0 of glob.scan(root.dir)) {
-            if (isIgnoredPath(rel0)) continue;
+            if (isIgnoredPath(rel0) || (nestedCore && rel0.startsWith(nestedCore))) continue;
             // A template's own placeholder, in the PATH. Provisioning fills
             // `{{project}}` into a new workspace's name — including in file names
             // — but a template mounted where it stands (the EHR's demo apps are
