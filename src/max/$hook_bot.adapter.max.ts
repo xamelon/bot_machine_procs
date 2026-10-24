@@ -11,7 +11,8 @@ async function maxTls() {
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
     if (opts.phase === "parse") return parse(opts.req, opts.body, opts.connection);
-    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message);
+    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message, opts.message?.attempts ?? 0);
+    if (opts.phase === "preparePhoto") return uploadPhoto(ctx, opts.connection, opts.path);
     if (opts.phase === "provision") return provision(ctx, opts.connection);
 }
 
@@ -77,23 +78,62 @@ function parse(req: Request | undefined, body: any, connection: any) {
     return ignored();
 }
 
-async function send(ctx: Context, connection: any, payload: any) {
+async function send(ctx: Context, connection: any, payload: any, attempts = 0) {
     const token = connection?.credentials?.access_token;
     if (!token) return { ok: false, error: "MAX access token is not configured", retryAfter: 60 };
+    const attachments = messageAttachments(payload);
+    if (attachments.error) return { ok: false, error: attachments.error, retryAfter: 60 };
+    const formatted = ctx.fns.bot.formatMessage({ channel: "max", text: payload.text, format: payload.format });
     const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'max', url: `${API}/messages?chat_id=${encodeURIComponent(payload.external_id)}`, recipient: String(payload.external_id), init: {
         method: "POST",
         tls: await maxTls(),
         headers: { Authorization: token, "content-type": "application/json" },
         body: JSON.stringify(strip({
-            text: payload.text || "",
-            attachments: keyboard(payload),
-            format: payload.format,
+            text: formatted.text,
+            attachments: attachments.value,
+            format: formatted.format,
             notify: payload.notify,
         })),
     } });
     const json: any = await res.json().catch(() => ({}));
     if (res.ok) return { ok: true, externalMessageId: String(json.message?.body?.mid ?? json.message?.body?.message_id ?? Date.now()) };
-    return { ok: false, error: `MAX HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? 60, rateLimited: pause !== undefined };
+    const retryAfter = json.code === "attachment.not.ready" ? Math.min(60, 5 * 2 ** Math.min(attempts, 4)) : 60;
+    return { ok: false, error: `MAX HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? retryAfter, rateLimited: pause !== undefined };
+}
+
+async function uploadPhoto(ctx: Context, connection: any, path: string) {
+    const token = connection?.credentials?.access_token;
+    if (!token) return { ok: false, error: "MAX access token is not configured", retryAfter: 60 };
+    const file = Bun.file(path);
+    if (!(await file.exists())) return { ok: false, error: "local photo is missing" };
+    const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: "max", url: `${API}/uploads?type=image`, init: {
+        method: "POST", tls: await maxTls(), headers: { Authorization: token },
+    } });
+    const target: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: `MAX upload URL HTTP ${res.status}`, retryAfter: pause ?? 60 };
+    // Signed upload URLs contain credentials: never echo them in error messages,
+    // and never forward the bot token to an arbitrary host or redirect.
+    let url: URL;
+    try { url = new URL(target.url); } catch { return { ok: false, error: "MAX returned an invalid upload URL" }; }
+    if (url.protocol !== "https:" || !["oneme.ru", "okcdn.ru", "max.ru"].some(domain => url.hostname === domain || url.hostname.endsWith(`.${domain}`))) {
+        return { ok: false, error: "MAX returned an unexpected upload host" };
+    }
+    const form = new FormData();
+    form.append("data", file);
+    let result;
+    try {
+        result = await ctx.fns.bot.platformFetch({ channel: "max", url: url.href, init: {
+            method: "POST", tls: await maxTls(), headers: { Authorization: token }, body: form, redirect: "error",
+        } });
+    } catch (error: any) {
+        return { ok: false, error: "MAX image upload failed", retryAfter: error?.retryAfter ?? 60 };
+    }
+    if (!result.response.ok) return { ok: false, error: `MAX image upload HTTP ${result.response.status}`, retryAfter: result.retryAfter ?? 60 };
+    const uploaded: any = await result.response.json().catch(() => ({}));
+    const photos: any[] = Object.values(uploaded.photos ?? {});
+    const ref = uploaded.token ?? (photos.length === 1 ? photos[0]?.token : undefined);
+    if (typeof ref !== "string" || !ref) return { ok: false, error: "MAX image upload returned no token" };
+    return { ref };
 }
 
 async function provision(ctx: Context, connection: any) {
@@ -132,11 +172,23 @@ async function api(ctx: Context, token: string, path: string, body?: any) {
 
 function keyboard(payload: any) {
     const rows = payload.button_rows ?? rowsFromButtons(payload.buttons, payload.buttons_per_row ?? 3);
-    if (!rows?.length) return payload.attachments;
+    if (!rows?.length) return [];
     return [{
         type: "inline_keyboard",
         payload: { buttons: rows.map((r: any[]) => r.map((b) => b.url ? { type: "link", text: b.label, url: b.url } : { type: "callback", text: b.label, payload: String(b.payload || b.label) })) },
     }];
+}
+function messageAttachments(payload: any): { value?: any[]; error?: string } {
+    const attachments = [];
+    for (const photo of payload.attachments ?? []) {
+        if (photo?.type !== "photo") { attachments.push(photo); continue; }
+        if (photo.ref) attachments.push({ type: "image", payload: { token: photo.ref } });
+        else if (typeof photo.url === "string" && /^https?:\/\//i.test(photo.url)) attachments.push({ type: "image", payload: { url: photo.url } });
+        else return { error: "MAX photo requires an uploaded token or public URL" };
+    }
+    if (attachments.filter(a => a?.type === "image").length > 12) return { error: "MAX supports at most 12 images per message" };
+    const buttons = keyboard(payload);
+    return { value: attachments.length || buttons.length ? [...attachments, ...buttons] : undefined };
 }
 function rowsFromButtons(buttons: any[] = [], perRow = 3) { const out = []; for (let i = 0; i < buttons.length; i += perRow) out.push(buttons.slice(i, i + perRow)); return out; }
 function profile(input: any, from: any) {

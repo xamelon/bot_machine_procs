@@ -72,6 +72,36 @@ git commit -m 'Update shared bot core'
 The shared integration branch is `main`. Hosts track it in `.gitmodules`, while
 each host's committed gitlink pins the exact version tested for that bot.
 
+## Message formatting
+
+Node/outbox texts use Markdown by default for MAX and VK. Prefer a small portable
+subset: paragraphs and line breaks, headings, **bold**, *italic*, links and lists.
+Avoid tables and complex layouts. Button labels are plain text.
+
+- MAX sends the source with `format: "markdown"` (explicit `format: "html"` is preserved).
+- VK renders Markdown as readable plain text: emphasis markers disappear, list
+  markers remain, and `[label](url)` becomes `label — url`.
+- Set payload `format: "plain"` to send literal text on either platform.
+- Other platforms are unchanged. Source texts in flows and outbox are not rewritten.
+
+Conversion lives in `bot.formatMessage` and runs in the platform adapters, so it
+also covers broadcasts and manual sends. The editor still shows source Markdown;
+there is no per-platform preview yet.
+
+## MAX photos
+
+Photo attachments (`{ type: "photo", url }` or `{ type: "photo", ref }`) are
+converted to MAX `image` attachments. Local editor uploads are sent as multipart
+`data` to the URL from `POST /uploads?type=image`; the returned token is cached
+per connection in `bot_media_uploads`. Public HTTP(S) image URLs can be sent
+directly without uploading. Photos, text and the inline keyboard stay in one
+message; more than 12 images produce an explicit error rather than being dropped.
+MAX format restrictions still apply (notably WebP is not listed as supported).
+
+If MAX responds `attachment.not.ready`, the outbox retries after 5–60 seconds
+with increasing delays, reusing the cached token. Upload errors do not populate
+the cache. TLS certificate checks remain enabled for both API and upload calls.
+
 ## Development
 
 This repository also runs standalone (`bun install && bun run start`).

@@ -13,12 +13,12 @@ async function prepare(ctx: Context, connection: any, payload: any, photo: any) 
         params: [connection.id, photo.url],
     })[0]?.remote_ref;
     if (cached) return { ...photo, ref: cached };
-    if (connection.channel === "vk") {
+    if (connection.channel === "vk" || connection.channel === "max") {
         const uploaded = await ctx.fns.procs.hooks.first({
-            name: "bot.adapter.vk",
+            name: `bot.adapter.${connection.channel}`,
             opts: { phase: "preparePhoto", connection, path: disk(ctx, photo.url), peerId: payload.external_id },
         });
-        if (!uploaded?.ref) throw new Error(uploaded?.error ?? "VK photo upload failed");
+        if (!uploaded?.ref) throw Object.assign(new Error(uploaded?.error ?? `${connection.channel} photo upload failed`), { retryAfter: uploaded?.retryAfter });
         put(ctx, connection.id, photo.url, uploaded.ref);
         return { ...photo, ref: uploaded.ref };
     }

@@ -85,12 +85,13 @@ test("vk send uploads a photo url before messages.send", async () => {
         if (path.startsWith("https://upload")) return new Response(JSON.stringify({ server: 1, photo: "[]", hash: "h" }));
         if (path.includes("saveMessagesPhoto")) return new Response(JSON.stringify({ response: [{ owner_id: 1, id: 9 }] }));
         expect(new URLSearchParams(init?.body).get("attachment")).toBe("photo1_9");
+        expect(new URLSearchParams(init?.body).get("message")).toBe("Фото — https://example.org");
         return new Response(JSON.stringify({ response: 44 }));
     }) as any;
     try {
         const result = await ctx.fns.procs.hooks.first({
             name: "bot.adapter.vk",
-            opts: { phase: "send", connection: { id: saved.id, credentials: { group_access_token: "v" } }, message: { payload: { external_id: "5", text: "pic", attachments: [{ type: "photo", url: "https://img/a.jpg" }] } } },
+            opts: { phase: "send", connection: { id: saved.id, credentials: { group_access_token: "v" } }, message: { payload: { external_id: "5", text: "**[Фото](https://example.org)**", attachments: [{ type: "photo", url: "https://img/a.jpg" }] } } },
         });
         expect(result).toEqual({ ok: true, externalMessageId: "44" });
     } finally { globalThis.fetch = original; }
@@ -118,7 +119,8 @@ test("max sends text with inline keyboard", async () => {
         expect(String(url)).toBe("https://platform-api2.max.ru/messages?chat_id=42");
         expect(init.headers.Authorization).toBe("m");
         expect(JSON.parse(init.body)).toMatchObject({
-            text: "choose",
+            text: "**choose**",
+            format: "markdown",
             attachments: [{ type: "inline_keyboard", payload: { buttons: [[{ type: "callback", text: "Go", payload: "go" }]] } }],
         });
         return new Response(JSON.stringify({ message: { body: { mid: "m2" } } }));
@@ -126,7 +128,7 @@ test("max sends text with inline keyboard", async () => {
     try {
         const result = await ctx.fns.procs.hooks.first({
             name: "bot.adapter.max",
-            opts: { phase: "send", connection: { credentials: { access_token: "m" } }, message: { payload: { external_id: "42", text: "choose", buttons: [{ label: "Go", payload: "go" }] } } },
+            opts: { phase: "send", connection: { credentials: { access_token: "m" } }, message: { payload: { external_id: "42", text: "**choose**", buttons: [{ label: "Go", payload: "go" }] } } },
         });
         expect(result).toEqual({ ok: true, externalMessageId: "m2" });
     } finally { globalThis.fetch = original; }

@@ -46,7 +46,7 @@ async function send(ctx: Context, connection: any, payload: any) {
     const form: Record<string, string> = {
         peer_id: String(payload.external_id),
         random_id: stableRandomId({ ...payload, _outbox_id: payload.id }),
-        message: payload.text || "",
+        message: ctx.fns.bot.formatMessage({ channel: "vk", text: payload.text, format: payload.format }).text,
         v: API_VERSION,
     };
     const keyboard = vkKeyboard(payload.button_rows ?? payload.buttons ?? [], payload.keyboard_mode ?? "inline", payload.buttons_per_row ?? 3);
@@ -82,8 +82,8 @@ async function provision(ctx: Context, connection: any, waitMs: number) {
         : await vk(ctx, token, "groups.addCallbackServer", { group_id: String(groupId), url, title: "bot", secret_key: secret, v: API_VERSION });
     if (server.ok === false) return { ok: false, error: server.error, credentials: { confirmation_code: confirmation, callback_secret: secret } };
     const serverId = found?.id ?? server.response?.server_id;
-    const confirmed = await waitConfirmed(ctx, connection.id, waitMs);
-    if (!confirmed) return { ok: false, error: "VK did not confirm callback URL", credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
+    const confirmed = await waitConfirmed(ctx, token, String(groupId), String(serverId), connection.id, waitMs);
+    if (confirmed !== true) return { ok: false, error: `VK did not confirm callback URL${confirmed ? ` (server status: ${confirmed})` : ""}`, credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
     const settings = await vk(ctx, token, "groups.setCallbackSettings", { group_id: String(groupId), server_id: String(serverId), message_new: "1", v: API_VERSION });
     if (settings.ok === false) return { ok: false, error: settings.error, credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) } };
     return { ok: true, externalId: String(groupId), credentials: { confirmation_code: confirmation, callback_secret: secret, callback_server_id: String(serverId) }, config: { webhook_url: url, provision_status: "active" } };
@@ -144,15 +144,27 @@ function markConfirmed(ctx: Context, connection: any) {
     ctx.fns.procs.db.run({ sql: "UPDATE bot_channel_connections SET credentials = ?, updated_at = ? WHERE id = ?", params: [JSON.stringify(credentials), credentials.confirmation_received_at, connection.id] });
 }
 
-async function waitConfirmed(ctx: Context, id: number, waitMs: number) {
-    const until = Date.now() + waitMs;
-    do {
+// VK sends the confirmation request after addCallbackServer has answered, so it
+// never lands within the same tick — wait for it a few seconds at least. When the
+// URL did not change (a repeated "Set webhook"), VK sends nothing new, but
+// getCallbackServers already reports the server as "ok": that counts too.
+// Returns true, or the last server status VK reported (or null).
+async function waitConfirmed(ctx: Context, token: string, groupId: string, serverId: string, id: number, waitMs: number) {
+    const until = Date.now() + Math.max(waitMs, 5_000);
+    let status: string | null = null;
+    let nextServerCheck = Date.now() + 1_000;
+    while (true) {
         const row = ctx.fns.procs.db.select({ sql: "SELECT credentials FROM bot_channel_connections WHERE id = ?", params: [id] })[0];
         if (JSON.parse(row?.credentials || "{}").confirmation_received_at) return true;
-        if (Date.now() >= until) return false;
-        await Bun.sleep(50);
-    } while (Date.now() <= until);
-    return false;
+        if (Date.now() >= nextServerCheck || Date.now() >= until) {
+            const listed = await vk(ctx, token, "groups.getCallbackServers", { group_id: groupId, server_ids: serverId, v: API_VERSION });
+            status = (listed.response?.items ?? []).find((server: any) => String(server.id) === serverId)?.status ?? status;
+            if (status === "ok") return true;
+            nextServerCheck = Date.now() + 1_000;
+        }
+        if (Date.now() >= until) return status;
+        await Bun.sleep(100);
+    }
 }
 
 function vkKeyboard(buttonRows: any, mode: string, perRow: number) {
