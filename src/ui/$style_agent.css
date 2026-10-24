@@ -34,3 +34,19 @@
     .bot-workbench { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .bot-workbench > .asx-side-nav { width: 100%; height: auto; max-height: 24dvh; border-right: 0; border-bottom: 1px solid var(--color-asx-border); }
 }
+/* Chat prose, not literal Markdown. Keep long code/tables inside the pane. */
+.agent-panel .asx-chat-message-bubble__body.asx-markdown { white-space: normal; min-width: 0; overflow-wrap: anywhere; }
+.agent-panel .asx-markdown > :first-child { margin-top: 0; }
+.agent-panel .asx-markdown > :last-child { margin-bottom: 0; }
+.agent-panel .asx-markdown pre { max-width: 100%; overflow-x: auto; white-space: pre; padding: var(--asx-space-3); border-radius: var(--asx-radius-element); background: var(--color-asx-background-muted); font: 12px/1.6 ui-monospace, monospace; }
+.agent-panel .asx-markdown code { font-family: ui-monospace, monospace; font-size: .9em; }
+.agent-panel .asx-markdown :not(pre) > code { padding: 1px 4px; border-radius: 3px; background: var(--color-asx-background-muted); }
+.agent-panel .asx-markdown ul { list-style: disc; }
+.agent-panel .asx-markdown ol { list-style: decimal; }
+.agent-panel .asx-markdown blockquote { margin: var(--asx-space-3) 0; padding-left: var(--asx-space-3); border-left: 2px solid var(--color-asx-border); color: var(--color-asx-text-secondary); }
+.agent-panel .asx-markdown a { color: var(--color-asx-accent); text-decoration: underline; }
+.agent-panel .asx-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 12px; }
+.agent-panel .asx-markdown th, .agent-panel .asx-markdown td { padding: 4px 8px; border: 1px solid var(--color-asx-border); text-align: left; }
+/* Signed-in operator without the Pi panel (editor, viewer): the page alone. */
+.bot-workspace--solo { min-width: 0; min-height: 0; height: 100%; overflow: auto; background: var(--color-asx-background-body); }
+.bot-account__line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -1,14 +1,13 @@
-export default function (ctx: Context, _session: Session | null, opts: { markdown: string; class?: string }) {
+// One Markdown renderer for pages and chat: native Bun, with model HTML disabled.
+export default function (ctx: Context, _session: Session | null, opts: { markdown: string; class?: string; images?: boolean }) {
     const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
-    const html = sanitizeMarkdownHtml(Bun.markdown.html(opts.markdown));
+    // With raw HTML disabled the markup/attributes come only from Bun, not the
+    // input. Restrict generated URLs too: javascript/data and obfuscated schemes
+    // must never become links, even if supplied through Markdown syntax.
+    let html = Bun.markdown.html(opts.markdown, { noHtmlBlocks: true, noHtmlSpans: true })
+        .replace(/\s+(href|src)="([^"]*)"/gi, (attribute, _name, url) =>
+            /^(?:https?:\/\/|mailto:|#|\/(?!\/)|\.{1,2}\/)/i.test(url) ? attribute : "");
+    // Chat should not load third-party tracking images from model output.
+    if (opts.images === false) html = html.replace(/<img\b[^>]*>/gi, "");
     return `<article class="asx-markdown ${esc(opts.class ?? "")}">${html}</article>`;
-}
-
-function sanitizeMarkdownHtml(html: string): string {
-    return html
-        .replace(/<(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
-        .replace(/<\/?(?:script|style|iframe|object|embed)\b[^>]*>/gi, "")
-        .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-        .replace(/\s+(href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, "")
-        .replace(/\s+(href|src)\s*=\s*javascript:[^\s>]+/gi, "");
 }

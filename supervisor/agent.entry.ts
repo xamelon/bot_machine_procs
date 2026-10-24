@@ -25,11 +25,16 @@ const registry = createRegistry();
 registry.install(await appTools(root));
 // ponytail: JSONL keeps history in memory. Use a Bun SQLite adapter for long-running production sessions.
 const harness = await Harness.open(await openNodeJsonlStorage(resolve(root, ".runtime/agent/session"), context, { fsync: true }), { models, registry }, context);
+const INSTRUCTIONS = "You maintain this procs application. Use list/read/edit/write to change app src only: paths name files from the project root (src/app/x.ts), and a bare app/x.ts is read from src. A bot flow is not a file: its nodes and texts live in bot_flow_versions.definition, so change it through the admin editor at /bot/flows, or in repl read that row and call await ctx.fns.bot.save({ definition }); write a $migration_* file only when the change must ship with the code to every installation, never for a one-off edit. The shared framework and base admin live in the bot_machine Git submodule (src/bot_machine in consuming apps): you may read it to understand a function, a page or a contract, but you cannot write it — shared changes belong in the core repository. Do not copy shared core into app src. Consuming apps keep their specific code in src/app. The <tools> section of this prompt lists every tool you can call right now — repl among them, for inspecting the running app and its data. Functions call neighbours through ctx.fns, never import them. One default function per file, state on ctx.state. Ordinary edits hot reload; main/start/stop edits need a runtime restart. Explain changes and limitations honestly.";
 const conversation = await harness.root(context, { agent: {
     model: defaultModel,
-    instructions: "You maintain this procs application. Use list/read/edit/write to change app src only. The shared framework and base admin live in the bot_machine Git submodule (src/bot_machine in consuming apps), excluded from file access; do not copy or modify shared core through application tools. Consuming apps keep their specific code in src/app. Functions call neighbours through ctx.fns, never import them. One default function per file, state on ctx.state. Ordinary edits hot reload; main/start/stop edits need a runtime restart. Explain changes and limitations honestly.",
+    instructions: INSTRUCTIONS,
 } });
 const view = await conversation.viewState(context);
+// `root()` returns an existing conversation without applying these options, so a
+// new instruction belongs to the next boot only if we put it there ourselves.
+// The model stays whatever the UI last chose: only instructions are reconciled.
+if ((view.value.docs["pi.agent"] as any)?.instructions !== INSTRUCTIONS) await conversation.configure({ instructions: INSTRUCTIONS }, context);
 const selected = () => (view.value.docs["pi.agent"] as any)?.model ?? defaultModel;
 harness.resume();
 
@@ -39,7 +44,7 @@ Bun.serve({ hostname: "127.0.0.1", port: Number(process.env.PORT), async fetch(r
     try {
         const authResponse = await providerAuth.handle(req);
         if (authResponse) return authResponse;
-        if (req.method === "GET" && path === "/state") return Response.json({ ...view.value, configured: Boolean(await models.checkAuth(selected().provider)), provider: selected().provider, model: selected().modelId });
+        if (req.method === "GET" && path === "/state") return Response.json({ ...view.value, configured: Boolean(await models.checkAuth(selected().provider)), provider: selected().provider, model: selected().modelId, tools: registry.snapshot().installed().flatMap((extension: any) => (extension.tools ?? []).map((tool: any) => tool.name)), sections: registry.snapshot().installed().flatMap((extension: any) => (extension.sections ?? []).map((section: any) => section.key)) });
         if (req.method === "POST" && path === "/model") {
             const body = await req.json();
             if (typeof body.provider !== "string" || typeof body.modelId !== "string" || !models.getModel(body.provider, body.modelId)) return Response.json({ error: "Unknown model" }, { status: 400 });
@@ -56,6 +61,16 @@ Bun.serve({ hostname: "127.0.0.1", port: Number(process.env.PORT), async fetch(r
             return Response.json({ id: submission.id }, { status: 202 });
         }
         if (req.method === "POST" && path === "/abort") { await conversation.abort(context); return Response.json({ ok: true }); }
+        if (req.method === "POST" && path === "/reset") {
+            // Only the message log: `reset` writes a head marker, so the transcript
+            // before it leaves the context while the agent document (model,
+            // instructions), provider credentials and the files on disk stay as
+            // they were. Nothing is deleted and the worker keeps running.
+            await conversation.abort(context).catch(() => {});
+            await conversation.waitForIdle(context).catch(() => {});
+            await conversation.reset(undefined, context);
+            return Response.json({ ok: true });
+        }
         return new Response("Not found", { status: 404 });
     } catch (e: any) { return Response.json({ error: e.message }, { status: 500 }); }
 } });

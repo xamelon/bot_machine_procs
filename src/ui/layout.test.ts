@@ -5,6 +5,9 @@ import { tmpdir } from "node:os";
 import { testCtx } from "../$test";
 import { Window } from "happy-dom";
 
+// Browser client has no Markdown dependency: it uses procs.ui.markdown.
+const agentScript = await Bun.file(resolve(import.meta.dir, "$script_agent.js")).text();
+
 test("bot_procs shell keeps bot navigation, active page and Pi chat together", async () => {
     const ctx = await testCtx({ root: resolve(import.meta.dir, "../..") });
     ctx.session = { url: new URL("http://localhost/bot/channels") };
@@ -63,6 +66,7 @@ test("Pi client uses UI templates safely and preserves submit retry and stop", a
     const calls: Array<{ path: string; body: any }> = [];
     window.fetch = (async (url: string, opts?: { body: string }) => {
         const path = String(url).split("/").pop()!;
+        if (String(url) === '/ui/markdown') return new window.Response(JSON.stringify({ html: JSON.parse(opts!.body).texts.map((markdown: string) => ctx.fns.procs.ui.markdown({ markdown, images: false })) }));
         if (path === "state") return new window.Response(JSON.stringify({ configured: true, entries: [{ model: [
             { role: "user", content: "Hello" },
             { role: "assistant", content: "<img src=x onerror=alert(1)>" },
@@ -73,14 +77,14 @@ test("Pi client uses UI templates safely and preserves submit retry and stop", a
     }) as any;
     try {
         window.document.write(ctx.fns.ui.layout({ main: "Page" }));
-        const run = new Function("document", "fetch", "crypto", "Event", "setTimeout", await Bun.file(resolve(import.meta.dir, "$script_agent.js")).text());
+        const run = new Function("document", "fetch", "crypto", "Event", "setTimeout", agentScript);
         run(window.document, window.fetch, window.crypto, window.Event, window.setTimeout.bind(window));
         const settle = () => Bun.sleep(20);
         await settle();
         const document = window.document;
         expect(document.querySelectorAll('[data-agent-messages] .asx-chat-message').length).toBe(2);
         expect(document.querySelector('[data-agent-messages] img')).toBeNull();
-        expect(document.querySelector('.asx-chat-system-message')?.textContent).toContain("Tool result");
+        expect(document.querySelector('[data-agent-messages] .asx-chat-tool-call')?.textContent).toContain("Tool result");
         const input = document.querySelector<HTMLTextAreaElement>('textarea[name=text]')!;
         const form = document.querySelector('[data-asx-chat-composer]')!;
         input.value = "Make a change";

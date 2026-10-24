@@ -88,3 +88,12 @@ test("a nav link navigates with htmx, and the nav keeps its own active item in s
     expect(served.status).toBe(200);
     expect(await served.text()).toContain("data-active");
 });
+
+test("the chat header and the dock stay on screen while the conversation scrolls", async () => {
+    const sheet = await (await ctx.fns.procs.http.dispatch({ url: "/procs/ui/core.css" })).text();
+    const rule = (selector: string) => sheet.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+    // The chat layout itself scrolls, so a header that is not sticky leaves with the first message.
+    expect(rule(".asx-chat-layout__header")).toMatch(/position:\s*sticky/);
+    expect(rule(".asx-chat-layout__header")).toMatch(/top:\s*0/);
+    expect(rule(".asx-chat-layout__dock")).toMatch(/bottom:\s*0/);
+}, 60_000);
