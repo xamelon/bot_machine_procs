@@ -51,6 +51,21 @@ export default function (ctx: Context, session: Session | null, _opts: {}) {
         <div class="asx-trigger-form__actions">${ui.button({ label: "Create trigger", variant: "primary", type: "submit" })}</div>
     </form>` : ui.emptyState({ title: "No flows to trigger", body: "Create a flow first — a trigger names one." });
 
-    const main = `${notice ? ui.banner({ tone: tone as any, body: notice }) : ""}${ui.card({ title: "New trigger", description: "A trigger decides which flow starts when a message arrives.", body: form })}${ui.card({ body: table })}`;
+    const main = `${notice ? ui.banner({ tone: tone as any, body: notice }) : ""}${disconnected(ctx, esc)}${ui.card({ title: "New trigger", description: "A trigger decides which flow starts when a message arrives.", body: form })}${ui.card({ body: table })}`;
     return ctx.fns.bot.screen({ page: "bot-triggers", title: "Triggers", lead: "What starts a flow.", main });
+}
+
+// A trigger only fires on a channel connection its flow is linked to. Say so
+// here, where someone is about to wonder why nothing happens.
+function disconnected(ctx: Context, esc: (value: any) => string) {
+    const ui = ctx.fns.procs.ui;
+    const rows = ctx.fns.procs.db.select({
+        sql: `SELECT t.name, t.channel, f.name flow FROM bot_triggers t JOIN bot_flows f ON f.id = t.bot_flow_id
+              WHERE t.enabled = 1 AND NOT EXISTS (
+                  SELECT 1 FROM bot_flow_connections fc JOIN bot_channel_connections c ON c.id = fc.bot_channel_connection_id
+                  WHERE fc.bot_flow_id = t.bot_flow_id AND fc.enabled = 1 AND (t.channel = '*' OR c.channel = t.channel))`,
+    });
+    if (!rows.length) return "";
+    const list = rows.map((row: any) => `<li><strong>${esc(row.name)}</strong> → ${esc(row.flow)} (${esc(row.channel === "*" ? "any channel" : row.channel)})</li>`).join("");
+    return `<section class="asx-banner" data-tone="warning" data-section="bot-triggers-disconnected"><div><div class="asx-banner__title">These triggers cannot fire yet</div><div class="asx-banner__body"><ul>${list}</ul></div><div class="asx-banner__body">Their flow is not connected to the trigger's channel — open the flow and check the channel under Channels.</div></div><div class="asx-banner__actions">${ui.button({ label: "Flows", href: "/bot/flows", size: "sm" })}</div></section>`;
 }

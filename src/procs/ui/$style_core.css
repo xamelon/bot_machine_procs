@@ -260,6 +260,9 @@
 .asx-channel__webhook { display: flex; align-items: center; gap: var(--asx-space-2); min-width: 0; margin: 0; }
 .asx-channel__webhook code { flex: 1; min-width: 0; overflow: hidden; border: var(--asx-border-width) solid var(--color-asx-border); border-radius: var(--asx-radius-element); background: var(--color-asx-background-muted); padding: var(--asx-space-1) var(--asx-space-2); text-overflow: ellipsis; white-space: nowrap; font-size: var(--asx-text-supporting-size); }
 .asx-channel__actions { display: flex; flex-wrap: wrap; gap: var(--asx-space-2); }
+.asx-channel__flows { display: grid; gap: var(--asx-space-2); margin: 0; }
+.asx-channel__flows .asx-checkbox-list { display: grid; gap: var(--asx-space-1); }
+.asx-channel__flows-actions { display: flex; justify-content: flex-end; }
 .asx-channel-form { display: grid; gap: var(--asx-space-3); }
 .asx-channel-form__actions { display: flex; justify-content: flex-end; }
 .asx-trigger-form { display: grid; gap: var(--asx-space-4); }

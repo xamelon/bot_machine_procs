@@ -28,11 +28,17 @@ export default function (ctx: Context, session: Session | null, _opts: {}) {
         const error = state.error ? ui.banner({ tone: "error", body: state.error }) : "";
         const provision = state.echo ? "" : `<form method="post" action="/bot/channels/${state.row.id}/provision">${ui.button({ label: state.provisioned ? "Update webhook" : "Set webhook", type: "submit" })}</form>`;
         const remove = `<form method="post" action="/bot/channels/${state.row.id}/delete" onsubmit="return confirm('Delete ${esc(state.name)}?')">${ui.button({ label: "Delete", variant: "destructive", type: "submit" })}</form>`;
+        const flows = ctx.fns.bot.channelFlows({ connectionId: state.row.id });
+        const served = flows.filter((flow: any) => flow.linked).length;
+        const flowsForm = flows.length
+            ? `<form class="asx-channel__flows asx-form" method="post" action="/bot/channels/${state.row.id}/flows"><span class="asx-field__label-group"><span class="asx-field__label">Flows</span><span class="asx-field__description">A trigger starts a flow here only if it is checked.</span></span>${ui.checkboxList({ name: "flows", values: flows.filter((flow: any) => flow.linked).map((flow: any) => flow.slug), items: flows.map((flow: any) => ({ label: flow.name, value: flow.slug, description: flow.status })) })}<div class="asx-channel__flows-actions">${ui.button({ label: served ? "Save flows" : "Connect flows", variant: "secondary", size: "sm", type: "submit" })}</div></form>`
+            : `<p class="asx-channel__status">No flows yet — create one under Flows first.</p>`;
         const body = `<div class="asx-channel">
             <div class="asx-channel__status">${status}</div>
             ${facts}
             ${webhook}
             ${error}
+            ${flowsForm}
             <div class="asx-channel__actions">${provision}${remove}</div>
         </div>`;
         return ui.card({ title: state.name, right: badge(row.channel), body, class: "asx-channel-card" });

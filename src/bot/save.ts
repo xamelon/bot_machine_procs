@@ -42,13 +42,28 @@ export default function (ctx: Context, _session: Session | null, opts: {
             });
         }
         if (opts.connections) {
-            ctx.fns.procs.db.run({ sql: "DELETE FROM bot_flow_connections WHERE bot_flow_id = ?", params: [flowId] });
-            for (const publicId of opts.connections) {
+            // Resolve first: a bad public id must not cost the flow its existing links.
+            const targets = [...new Set(opts.connections)].map((publicId) => {
                 const connection = ctx.fns.procs.db.select({ sql: "SELECT id FROM bot_channel_connections WHERE public_id = ?", params: [publicId] })[0];
                 if (!connection) throw new Error(`unknown connection ${publicId}`);
+                return Number(connection.id);
+            });
+            const previous = new Map(ctx.fns.procs.db.select({ sql: "SELECT * FROM bot_flow_connections WHERE bot_flow_id = ?", params: [flowId] })
+                .map((row: any) => [Number(row.bot_channel_connection_id), row]));
+            ctx.fns.procs.db.run({ sql: "DELETE FROM bot_flow_connections WHERE bot_flow_id = ?", params: [flowId] });
+            for (const connectionId of targets) {
+                const before: any = previous.get(connectionId);
                 ctx.fns.procs.db.insert({
                     into: "bot_flow_connections",
-                    values: { bot_flow_id: flowId, bot_channel_connection_id: connection.id, enabled: 1, priority: 0, config: "{}", created_at: now, updated_at: now },
+                    values: {
+                        bot_flow_id: flowId,
+                        bot_channel_connection_id: connectionId,
+                        enabled: 1,
+                        priority: before?.priority ?? 0,
+                        config: before?.config ?? "{}",
+                        created_at: now,
+                        updated_at: now,
+                    },
                 });
             }
         }

@@ -36,3 +36,40 @@ test("saving and restoring a flow redirect to its version after persisting chang
         expect(read().nodes[0].text).toBe("After restore");
     } finally { ctx.fns.procs.db.close({}); }
 });
+
+test("the channels page connects and disconnects the flows a channel serves", async () => {
+    const ctx = await testCtx();
+    try {
+        for (const slug of ["welcome", "festival"]) {
+            ctx.fns.bot.save({ definition: { id: slug, start_node_id: "hello", nodes: [{ id: "hello", type: "message", text: slug }] } });
+        }
+        const max = ctx.fns.bot.saveConnection({ channel: "max", name: "Max bot", publicId: "chan-max" });
+        const links = () => ctx.fns.procs.db.select({
+            sql: `SELECT f.slug FROM bot_flow_connections fc JOIN bot_flows f ON f.id = fc.bot_flow_id
+                  WHERE fc.bot_channel_connection_id = ? ORDER BY f.slug`,
+            params: [max.id],
+        }).map((row: any) => row.slug);
+
+        const page = await ctx.fns.procs.http.dispatch({ url: "/bot/channels" });
+        const html = await page.text();
+        expect(html).toContain(`action="/bot/channels/${max.id}/flows"`);
+        expect(html).toContain(`name="flows" value="welcome"`);
+        expect(html).toContain(`name="flows" value="festival"`);
+
+        const form = (slugs: string[]) => {
+            const data = new FormData();
+            for (const slug of slugs) data.append("flows", slug);
+            return ctx.fns.procs.http.dispatch({ method: "POST", url: `/bot/channels/${max.id}/flows`, body: data });
+        };
+        expect((await form(["festival", "welcome"])).status).toBe(303);
+        expect(links()).toEqual(["festival", "welcome"]);
+        // Re-saving keeps the link that is still ticked instead of starting over.
+        expect((await form(["festival"])).status).toBe(303);
+        expect(links()).toEqual(["festival"]);
+        // An unknown slug is refused and the current links survive the refusal.
+        expect((await form(["nope"])).status).toBe(303);
+        expect(links()).toEqual(["festival"]);
+        expect((await form([])).status).toBe(303);
+        expect(links()).toEqual([]);
+    } finally { ctx.fns.procs.db.close({}); }
+});
