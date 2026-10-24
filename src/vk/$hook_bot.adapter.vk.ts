@@ -179,7 +179,10 @@ function vkKeyboard(buttonRows: any, mode: string, perRow: number) {
     return JSON.stringify({
         one_time: false,
         inline: mode !== "reply",
-        buttons: rows.map((r: any[]) => r.map((b) => ({ action: { type: "text", label: b.label, payload: JSON.stringify({ p: String(b.payload || b.label) }) }, color: "primary" }))),
+        // A button with `url` opens the link (open_link: no colour, no payload back to the bot).
+        buttons: rows.map((r: any[]) => r.map((b) => b.url
+            ? { action: { type: "open_link", link: String(b.url), label: b.label } }
+            : { action: { type: "text", label: b.label, payload: JSON.stringify({ p: String(b.payload || b.label) }) }, color: "primary" })),
     });
 }
 function photos(items: any[]) {

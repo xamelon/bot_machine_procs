@@ -13,11 +13,13 @@ test("echo webhook queues normalized input", async () => {
 });
 
 test("telegram parses messages and callback payloads", async () => {
-    const message = await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "parse", body: { update_id: 7, message: { chat: { id: 42 }, text: "hi", from: { id: 9, first_name: "Ada", username: "ada" }, photo: [{ file_id: "small", file_size: 1 }, { file_id: "big", file_size: 9 }] } } } });
-    expect(message.idempotencyKey).toBe("telegram:7");
+    const connection = { id: 123, credentials: { webhook_secret: "test-secret" } };
+    const req = new Request("https://bot.example/bot/webhook/telegram/test", { headers: { "x-telegram-bot-api-secret-token": "test-secret" } });
+    const message = await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "parse", connection, req, body: { update_id: 7, message: { chat: { id: 42, type: "private" }, text: "hi", from: { id: 9, first_name: "Ada", username: "ada" }, photo: [{ file_id: "small", file_size: 1 }, { file_id: "big", file_size: 9 }] } } } });
+    expect(message.idempotencyKey).toBe("telegram:123:7");
     expect(message.input).toMatchObject({ channel: "telegram", external_id: "42", text: "hi", display_name: "Ada", attachments: [{ type: "photo", ref: "big" }] });
 
-    const callback = await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "parse", body: { update_id: 8, callback_query: { data: JSON.stringify({ p: "go" }), message: { chat: { id: 42 } } } } } });
+    const callback = await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "parse", connection, req, body: { update_id: 8, callback_query: { id: "callback-8", data: JSON.stringify({ p: "go" }), message: { chat: { id: 42, type: "private" } } } } } });
     expect(callback.input).toMatchObject({ payload: "go", text: JSON.stringify({ p: "go" }) });
 });
 
@@ -190,4 +192,29 @@ test("max provision stores webhook and secret", async () => {
     expect(row.external_id).toBe("max_bot");
     expect(JSON.parse(row.config).webhook_url).toBe("https://bot.example/bot/webhook/max/max1");
     expect(JSON.parse(row.credentials).webhook_secret).toBe("max_max1");
+});
+
+test("a button with url becomes a link button in vk and telegram, others stay callbacks", async () => {
+    const rows = [[{ label: "Pay", url: "https://pay.example/1" }], [{ label: "Check", payload: "check:1" }]];
+    const bodies: any[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: any, init: any) => {
+        bodies.push({ url: String(url), body: init?.body });
+        return new Response(JSON.stringify(String(url).includes("api.vk.com") ? { response: 1 } : { ok: true, result: { message_id: 1 } }));
+    }) as any;
+    try {
+        await ctx.fns.procs.hooks.first({ name: "bot.adapter.vk", opts: { phase: "send", connection: { credentials: { group_access_token: "v" } }, message: { payload: { external_id: "501", text: "Pay", button_rows: rows } } } });
+        await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "send", connection: { credentials: { bot_token: "t" } }, message: { payload: { external_id: "502", text: "Pay", button_rows: rows } } } });
+        await ctx.fns.procs.hooks.first({ name: "bot.adapter.telegram", opts: { phase: "send", connection: { credentials: { bot_token: "t" } }, message: { payload: { external_id: "503", text: "Pay", button_rows: rows, keyboard_mode: "reply" } } } });
+    } finally { globalThis.fetch = original; }
+
+    const vk = JSON.parse(new URLSearchParams(bodies[0].body).get("keyboard")!);
+    expect(vk.buttons[0][0]).toEqual({ action: { type: "open_link", link: "https://pay.example/1", label: "Pay" } });
+    expect(vk.buttons[1][0].action).toMatchObject({ type: "text", label: "Check", payload: JSON.stringify({ p: "check:1" }) });
+
+    const tg = JSON.parse(bodies[1].body).reply_markup.inline_keyboard;
+    expect(tg[0][0]).toEqual({ text: "Pay", url: "https://pay.example/1" });
+    expect(tg[1][0]).toEqual({ text: "Check", callback_data: JSON.stringify({ p: "check:1" }) });
+    // Reply keyboards have no link buttons: the label stays plain text.
+    expect(JSON.parse(bodies[2].body).reply_markup.keyboard[0][0]).toEqual({ text: "Pay" });
 });

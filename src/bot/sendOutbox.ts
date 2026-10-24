@@ -20,7 +20,7 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
                     failed++;
                     // `unreachable`: the person blocked the bot or cannot be written to — no retry.
                     if (result.unreachable && connection) ctx.fns.bot.blockUser({ connectionId: connection.id, externalId: message.external_id });
-                    ctx.fns.bot.failOutbox({ id: message.id, error: String(result.error ?? "send failed"), retryAfter: result.retryAfter, final: !!result.unreachable });
+                    ctx.fns.bot.failOutbox({ id: message.id, error: String(result.error ?? "send failed"), retryAfter: result.retryAfter, final: !!(result.unreachable || result.permanent) });
                     continue;
                 }
                 if (connection && result.fileIds) ctx.fns.bot.rememberMedia({ connectionId: connection.id, payload: message.payload, refs: result.fileIds });

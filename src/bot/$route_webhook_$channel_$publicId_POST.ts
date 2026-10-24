@@ -20,7 +20,10 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
     if (!parsed.input) return new Response(JSON.stringify({ ok: true, ignored: true }), { status: 200, headers: { "content-type": "application/json" } });
 
     const queued = ctx.fns.bot.ingest({ input: { ...parsed.input, channel: connection.channel }, connectionId: connection.id, idempotencyKey: parsed.idempotencyKey });
+    // Telegram can execute an API method from its webhook response. Never acknowledge
+    // a callback before ingest succeeds; acknowledge duplicate deliveries as well.
     if (parsed.webhookResponse instanceof Response) return parsed.webhookResponse;
+    if (parsed.webhookReply) return Response.json(parsed.webhookReply);
     return new Response(JSON.stringify({ ok: true, queued: queued.inserted }), { status: 202, headers: { "content-type": "application/json" } });
 }
 

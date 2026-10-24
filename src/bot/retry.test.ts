@@ -94,14 +94,14 @@ test("Telegram 403 / chat not found, VK 900–902 and MAX 403 block the person, 
         } finally { restore(); }
     }
 
-    // A bad request that is not about the recipient is an ordinary retry, not a block.
+    // Invalid content cannot succeed on retry, but must not block the recipient.
     addUser(tg.id, "telegram", "14");
     const restore = stubFetch(() => new Response(JSON.stringify({ ok: false, error_code: 400, description: "Bad Request: can't parse entities" }), { status: 400 }));
     try {
         db.run({ sql: "DELETE FROM bot_outbox_messages" });
         const id = queue(tg.id, "telegram", "14", "parse-14");
         await ctx.fns.bot.sendOutbox({});
-        expect(row(id).status).toBe("failed");
+        expect(row(id).status).toBe("dead");
         expect(user(tg.id, "14").blocked_at).toBeNull();
     } finally { restore(); }
 

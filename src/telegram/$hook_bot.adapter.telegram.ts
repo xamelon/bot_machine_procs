@@ -1,34 +1,50 @@
+import { randomBytes, timingSafeEqual } from "node:crypto";
+
 const API = "https://api.telegram.org";
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
-    if (opts.phase === "parse") return parse(ctx, opts.body, opts.connection);
+    if (opts.phase === "parse") return parse(opts.req, opts.body, opts.connection);
     if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message);
     if (opts.phase === "provision") return provision(ctx, opts.connection);
 }
 
-async function parse(ctx: Context, body: any, connection: any) {
+function parse(req: Request | undefined, body: any, connection: any) {
+    // Fail closed, including on the legacy /bot/webhook/telegram route.
+    // Existing connections must be provisioned again to install a webhook secret.
+    const secret = connection?.credentials?.webhook_secret;
+    const supplied = req?.headers.get("x-telegram-bot-api-secret-token");
+    if (typeof secret !== "string" || !secret || !supplied || !equalSecret(secret, supplied)) {
+        return { response: new Response("Forbidden", { status: 403 }) };
+    }
+    if (connection?.id == null || !Number.isSafeInteger(body?.update_id) || body.update_id < 0) {
+        return { response: new Response("Invalid update", { status: 400 }) };
+    }
+    const idempotencyKey = `telegram:${connection.id}:${body.update_id}`;
     if (body?.message) {
         const m = body.message;
         const chat = m.chat?.id;
-        if (!chat) return ignored();
+        if (!chat || m.chat.type !== "private" || m.from?.is_bot) return ignored();
         return {
-            idempotencyKey: `telegram:${body.update_id}`,
+            idempotencyKey,
             input: withStartParam(profile({
                 kind: "user_message",
                 channel: "telegram",
                 external_id: String(chat),
                 text: blank(String(m.text ?? m.caption ?? "").trim()),
                 payload: undefined,
-                attachments: await withFileUrls(ctx, connection, telegramPhotos(m)),
+                // Durable file_id only: Telegram download URLs contain the bot token.
+                attachments: telegramPhotos(m),
             }, m.from)),
         };
     }
     if (body?.callback_query) {
         const c = body.callback_query;
         const chat = c.message?.chat?.id;
-        if (!chat) return ignored();
+        if (!chat || c.message.chat.type !== "private" || c.from?.is_bot || typeof c.id !== "string" || typeof c.data !== "string") return ignored();
         return {
-            idempotencyKey: `telegram:${body.update_id}`,
+            idempotencyKey,
+            // The route returns this API method only after durably queueing the input.
+            webhookReply: { method: "answerCallbackQuery", callback_query_id: c.id },
             input: profile({
                 kind: "user_message",
                 channel: "telegram",
@@ -48,6 +64,8 @@ async function send(ctx: Context, connection: any, payload: any) {
     const token = connection?.credentials?.bot_token;
     if (!token) return { ok: false, error: "Telegram credentials are not configured", retryAfter: 60 };
     const attachments = (payload.attachments ?? []).filter((a: any) => a?.type === "photo");
+    const invalid = validate(payload, attachments);
+    if (invalid) return { ok: false, error: invalid, permanent: true };
     const photo = attachments.find((a: any) => a.ref || a.path || a.url);
     const formatted = ctx.fns.bot.formatMessage({ channel: "telegram", text: payload.text, format: payload.format });
     if (photo) {
@@ -86,7 +104,8 @@ async function call(ctx: Context, token: string, method: string, init: BunFetchR
     // 403: blocked by the user, user deactivated, kicked from the chat, can't initiate
     // a conversation; 400 "chat not found" — nobody to deliver to, retrying won't help.
     const unreachable = res.status === 403 || (res.status === 400 && /chat not found/i.test(String(json.description ?? "")));
-    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter, rateLimited: pause !== undefined, unreachable };
+    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter, rateLimited: pause !== undefined, unreachable,
+        permanent: res.status === 400 || json.error_code === 400 || res.status === 413 || res.status === 422 };
 }
 
 async function provision(ctx: Context, connection: any) {
@@ -97,10 +116,12 @@ async function provision(ctx: Context, connection: any) {
     const webhookUrl = `${base}/bot/webhook/telegram/${connection.public_id}`;
     const me = await getJson(ctx, token, "getMe");
     if (!me.ok) return { ok: false, error: me.error, config: { webhook_url: webhookUrl } };
-    const hook = await post(ctx, token, "setWebhook", { url: webhookUrl, allowed_updates: ["message", "callback_query"] });
+    const secret = connection.credentials.webhook_secret || randomBytes(32).toString("hex");
+    const hook = await post(ctx, token, "setWebhook", { url: webhookUrl, secret_token: secret, allowed_updates: ["message", "callback_query"] });
     if (hook.ok === false) return { ok: false, error: hook.error, config: { webhook_url: webhookUrl } };
     return {
         ok: true,
+        credentials: { webhook_secret: secret },
         externalId: me.result.username || connection.external_id,
         config: { webhook_url: webhookUrl, bot_id: String(me.result.id), bot_username: me.result.username, bot_name: me.result.first_name },
     };
@@ -112,22 +133,34 @@ async function getJson(ctx: Context, token: string, method: string) {
     return res.ok && json.ok ? json : { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}` };
 }
 
-async function withFileUrls(ctx: Context, connection: any, attachments: any[]) {
-    const token = connection?.credentials?.bot_token;
-    if (!token) return attachments;
-    for (const attachment of attachments) {
-        if (!attachment.ref || attachment.url) continue;
-        const file = await getJson(ctx, token, `getFile?file_id=${encodeURIComponent(attachment.ref)}`);
-        if (file.ok && file.result?.file_path) attachment.url = `${API}/file/bot${token}/${file.result.file_path}`;
+function equalSecret(a: string, b: string) {
+    const left = Buffer.from(a), right = Buffer.from(b);
+    return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function validate(payload: any, photos: any[]): string | undefined {
+    if (photos.length > 1) return "Telegram adapter supports one photo per message";
+    if ((payload.attachments ?? []).some((a: any) => a?.type !== "photo")) return "Telegram adapter supports photo attachments only";
+    if (photos.length && !photos.some((p: any) => p.ref || p.path || p.url)) return "Telegram photo has no file_id, path or URL";
+    if (!photos.length && !String(payload.text ?? "").trim()) return "Telegram message text is empty";
+    const perRow = payload.buttons_per_row ?? 3;
+    if (!Number.isSafeInteger(perRow) || perRow < 1) return "Telegram buttons_per_row must be a positive integer";
+    const rows = payload.button_rows ?? rowsFromButtons(payload.buttons, perRow);
+    if (payload.keyboard_mode !== "reply") {
+        for (const b of rows.flat()) {
+            if (b.url) continue;
+            const size = Buffer.byteLength(JSON.stringify({ p: String(b.payload || b.label) }), "utf8");
+            if (size > 64) return "Telegram callback_data exceeds 64 UTF-8 bytes";
+        }
     }
-    return attachments;
 }
 
 function keyboard(payload: any) {
     const rows = payload.button_rows ?? rowsFromButtons(payload.buttons, payload.buttons_per_row ?? 3);
     if (!rows?.length) return undefined;
     if (payload.keyboard_mode === "reply") return { keyboard: rows.map((r: any[]) => r.map((b) => ({ text: b.label }))), resize_keyboard: true };
-    return { inline_keyboard: rows.map((r: any[]) => r.map((b) => ({ text: b.label, callback_data: JSON.stringify({ p: String(b.payload || b.label) }) }))) };
+    // A button with `url` opens the link; reply keyboards have no such button, so there it stays text.
+    return { inline_keyboard: rows.map((r: any[]) => r.map((b) => b.url ? { text: b.label, url: String(b.url) } : { text: b.label, callback_data: JSON.stringify({ p: String(b.payload || b.label) }) })) };
 }
 function rowsFromButtons(buttons: any[] = [], perRow = 3) {
     const out: any[] = [];
