@@ -223,6 +223,11 @@ const server = Bun.serve({ hostname: process.env.SUPERVISOR_HOST || "127.0.0.1",
     try {
         return await fetch(`http://127.0.0.1:${target.port}${isAgent ? agentRoutes[url.pathname] : url.pathname + url.search}`, {
             method: req.method, headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : req.body, redirect: "manual",
+            // A browser that goes away takes its upstream request with it. Without
+            // this an event stream (/procs/events) outlives its tab: every reload
+            // leaks one runtime connection until fetch's pool (256) is full and
+            // every proxied request waits forever.
+            signal: req.signal,
             // Pass the runtime's answer through untouched. A proxy that decompresses
             // and keeps the header hands the browser a body that claims to be gzip
             // and is not; with it off, a compressed sheet arrives compressed at a
