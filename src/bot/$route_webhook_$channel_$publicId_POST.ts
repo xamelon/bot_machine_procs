@@ -20,6 +20,7 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
     if (!parsed.input) return new Response(JSON.stringify({ ok: true, ignored: true }), { status: 200, headers: { "content-type": "application/json" } });
 
     const queued = ctx.fns.bot.ingest({ input: { ...parsed.input, channel: connection.channel }, connectionId: connection.id, idempotencyKey: parsed.idempotencyKey });
+    if (parsed.webhookResponse instanceof Response) return parsed.webhookResponse;
     return new Response(JSON.stringify({ ok: true, queued: queued.inserted }), { status: 202, headers: { "content-type": "application/json" } });
 }
 

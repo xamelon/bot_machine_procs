@@ -4,14 +4,14 @@ const API_VERSION = "5.199";
 
 export default async function (ctx: Context, _session: Session | null, opts: any) {
     if (opts.phase === "parse") return parse(ctx, opts.body, opts.connection);
-    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message);
+    if (opts.phase === "send") return send(ctx, opts.connection, opts.message?.payload ?? opts.message, opts.message?.id);
     if (opts.phase === "preparePhoto") return uploadFile(ctx, opts.connection, opts.path, opts.peerId);
     if (opts.phase === "provision") return provision(ctx, opts.connection, opts.waitMs ?? 15_000);
 }
 
 function parse(ctx: Context, body: any, connection: any) {
     const creds = connection?.credentials ?? {};
-    if (creds.callback_secret && body?.secret && body.secret !== creds.callback_secret) return { status: 200, body: "ok" };
+    if (creds.callback_secret && body?.secret !== creds.callback_secret) return { status: 200, body: "ok" };
     if (body?.type === "confirmation") {
         markConfirmed(ctx, connection);
         const code = creds.confirmation_code || "";
@@ -22,6 +22,7 @@ function parse(ctx: Context, body: any, connection: any) {
     const user = message.from_id ?? message.peer_id;
     if (!user) return { status: 200, body: "ok" };
     return {
+        webhookResponse: new Response("ok", { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } }),
         idempotencyKey: `vk:${body.group_id ?? ""}:${body.event_id ?? createHash("sha256").update(JSON.stringify(body)).digest("hex")}`,
         input: withStartParam(maybeRef({
             kind: "user_message",
@@ -34,7 +35,7 @@ function parse(ctx: Context, body: any, connection: any) {
     };
 }
 
-async function send(ctx: Context, connection: any, payload: any) {
+async function send(ctx: Context, connection: any, payload: any, outboxId?: number) {
     const token = connection?.credentials?.group_access_token;
     if (!token) return { ok: false, error: "VK credentials are not configured", retryAfter: 60 };
     const refs: string[] = [];
@@ -45,7 +46,8 @@ async function send(ctx: Context, connection: any, payload: any) {
     }
     const form: Record<string, string> = {
         peer_id: String(payload.external_id),
-        random_id: stableRandomId({ ...payload, _outbox_id: payload.id }),
+        // Retries keep the same ID even if media refs change; distinct outbox rows do not collide by content.
+        random_id: stableRandomId(outboxId == null ? payload : { outbox_id: outboxId }),
         message: ctx.fns.bot.formatMessage({ channel: "vk", text: payload.text, format: payload.format }).text,
         v: API_VERSION,
     };
