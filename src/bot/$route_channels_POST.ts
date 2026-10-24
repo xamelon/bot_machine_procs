@@ -18,7 +18,7 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
 
     const publicId = "conn_" + randomBytes(4).toString("hex");
     ctx.fns.bot.saveConnection({ channel, name, publicId, externalId: channel === "vk" ? credentials.group_id : null, credentials });
-    const result = await ctx.fns.bot.provision({ publicId, waitMs: 0 }).catch((error: any) => ({ ok: false, error: String(error?.message ?? error) }));
+    const result = await ctx.fns.bot.provision({ publicId }).catch((error: any) => ({ ok: false, error: String(error?.message ?? error) }));
     return result.ok
         ? back(`${name} connected.`, "success")
         : back(`${name} saved, but provisioning failed: ${result.error ?? "unknown error"}`, "error");
