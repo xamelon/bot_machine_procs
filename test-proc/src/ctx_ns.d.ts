@@ -205,6 +205,7 @@ declare global {
             };
             styles: {
                 build: Injected<typeof import("../../src/procs/styles/build").default>;
+                current: Injected<typeof import("../../src/procs/styles/current").default>;
                 rebuild: Injected<typeof import("../../src/procs/styles/rebuild").default>;
             };
             ui: {
@@ -266,6 +267,7 @@ declare global {
                 fieldLabel: Injected<typeof import("../../src/procs/ui/fieldLabel").default>;
                 fieldStatus: Injected<typeof import("../../src/procs/ui/fieldStatus").default>;
                 fileInput: Injected<typeof import("../../src/procs/ui/fileInput").default>;
+                form: Injected<typeof import("../../src/procs/ui/form").default>;
                 formLayout: Injected<typeof import("../../src/procs/ui/formLayout").default>;
                 grid: Injected<typeof import("../../src/procs/ui/grid").default>;
                 hStack: Injected<typeof import("../../src/procs/ui/hStack").default>;

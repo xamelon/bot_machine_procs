@@ -222,7 +222,7 @@ export const CORE_LOADERS = [
     "route",      // the route table…
     "middleware", // …and what runs before it
     "script",     // browser assets, bundled on request
-    "style",      // Tailwind inputs, compiled and cached
+    "style",      // stylesheets, bundled and kept in memory
 ] as const;
 
 async function loadCoreLoaders(ctx: Context, entries: any[]): Promise<void> {

@@ -72,7 +72,11 @@ export default async function (ctx: Context, _session: Session | null, _opts?: {
             if (!root) continue;
             const rel = abs.slice(root.length + 1);
             const entry = ctx.fns.procs.project.classify({ rel });
-            if (entry.kind === "skip") continue;
+            if (entry.kind === "skip") {
+                // Imported CSS is not a routed `$style`, but still changes its bundle.
+                if (rel.endsWith(".css")) needStyles = true;
+                continue;
+            }
             const exists = await Bun.file(abs).exists();
             if (!exists) { errors.delete(rel); needTypes = true; continue; } // deleted: types only, fn stays in memory
             try {

@@ -42,7 +42,7 @@ export default function (_ctx: Context, _session: Session | null, opts: { rel: s
     const moduleDir = dirname(rel);
     const fileName = basename(rel);
 
-    // $style_<name>.css → a Tailwind input, compiled against the whole scan and
+    // $style_<name>.css → a plain stylesheet, bundled by Bun (styles.build) and
     // served at /<module>/<name>.css. Comes before $script so a stylesheet is not
     // treated as a raw asset.
     if (/^\$style_.+\.css$/.test(fileName)) {

@@ -5,6 +5,5 @@ test-proc/node_modules/*
 !test-proc/node_modules/@test/
 !test-proc/node_modules/@test/measures/
 .runtime/
-.runtime-tw/
 dist/
 .env

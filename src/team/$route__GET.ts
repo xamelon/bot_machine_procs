@@ -39,7 +39,7 @@ export default function (ctx: Context, session: Session | null, _opts: {}) {
         ].join("") }) },
     ], rows, empty: "No accounts" });
 
-    const form = `<form class="asx-form grid gap-3" method="post" action="/_control/users">
+    const form = `<form class="asx-form" method="post" action="/_control/users">
         ${ctx.fns.bot.input({ name: "login", label: "Login", placeholder: "anna", required: true })}
         ${ctx.fns.bot.input({ name: "name", label: "Name", placeholder: "Anna Petrova" })}
         ${ui.selector({ name: "role", label: "Role", value: "editor", items: ROLE_ITEMS })}

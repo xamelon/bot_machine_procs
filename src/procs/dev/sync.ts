@@ -7,6 +7,10 @@ import { Glob } from "bun";
 
 export default async function (ctx: Context, _session: Session | null, opts: { rel: string }) {
     const entry = ctx.fns.procs.project.classify({ rel: opts.rel });
+    if (entry.kind === 'skip' && opts.rel.endsWith('.css')) {
+        await ctx.fns.procs.styles.rebuild({});
+        return { synced: opts.rel, as: 'CSS import' };
+    }
 
     // Namespace lint gate (fn/type files affect the registry/types tree).
     if (entry.kind === 'fn' || entry.kind === 'type') {
@@ -18,12 +22,12 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
         const name = dottedName(entry);
         await ctx.fns.procs.repl.load({ name });
         await ctx.fns.procs.dev.genTypes({});
-        await ctx.fns.procs.styles.rebuild({});
         return { synced: opts.rel, as: 'ctx.fns.' + name };
     }
     if (entry.kind === 'route' || entry.kind === 'script' || entry.kind === 'style') {
         await ctx.fns.procs.http.loadRoutes({});
-        await ctx.fns.procs.styles.rebuild({});
+        // Markup is not an input to CSS compilation.
+        if (entry.kind === 'style') await ctx.fns.procs.styles.rebuild({});
         const as = entry.kind === 'route' ? `${entry.method} ${entry.routePath}` : `GET ${entry.routePath}`;
         return { synced: opts.rel, as };
     }

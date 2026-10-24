@@ -1,0 +1,12 @@
+/* The module manager's rows and add-container form. Shared controls remain procs.ui. */
+.module-entry.asx-item { align-items: start; border-top: 1px solid var(--color-asx-border); border-radius: 0; padding: var(--asx-space-3) var(--asx-space-4); }
+.module-entry .asx-item__title { overflow: visible; white-space: normal; }
+.module-entry .asx-item__description { margin-top: var(--asx-space-1); white-space: normal; }
+.module-entry .asx-item__main { gap: 2px; }
+.module-entry .asx-item__start { padding-top: 2px; }
+.module-entry .asx-item__end { white-space: nowrap; }
+.module-entry__directory { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-asx-text-disabled); font-size: var(--asx-text-supporting-size); }
+.module-entry__directory .asx-code { background: transparent; color: inherit; padding: 0; }
+.module-add { display: grid; grid-template-columns: 10rem minmax(0, 1fr) auto; align-items: center; gap: var(--asx-space-2); }
+.module-add .asx-input { width: 100%; min-width: 0; }
+@container (width < 36rem) { .module-add { grid-template-columns: minmax(0, 1fr); } .module-add .asx-button { justify-self: start; } }

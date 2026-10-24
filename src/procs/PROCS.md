@@ -55,7 +55,7 @@ url `/hs/ui`. The folder or npm package that delivered the file names nothing.
 | `mod/$hook_<point>.ts` | answers one | `procs.hooks.run/first` |
 | `mod/$migration_<id>.ts` | migration | `procs.migrate.up`, in id order |
 | `mod/$cli_<cmd>.ts` | CLI command | `bun script/cli.ts <cmd>` (`_`→`:`) |
-| `mod/$script_<n>.js\|mjs\|css` · `$style_<n>.css` | browser asset · Tailwind input | `GET /mod/<n>.<same ext>` · `GET /mod/<n>.css` |
+| `mod/$script_<n>.js\|mjs\|css` · `$style_<n>.css` | browser asset · stylesheet (bundled by Bun) | `GET /mod/<n>.<same ext>` · `GET /mod/<n>.css` |
 | `mod/$loader_<kind>.ts` | a loader | owns every `$<kind>_*` file anywhere |
 | `mod/$<kind>_<name>.json` | a file some module owns | whatever its loader does with it |
 | `$main.ts` · `$test.ts` · `*.test.ts` · `*.entry.ts` · `*.d.ts` | skipped | — |
@@ -266,6 +266,23 @@ ctx.fns.procs.log.info({ event: "note.added", msg: id, "db.rows": 1 });
 
 Attribute names are dotted and namespaced by what they describe (`http.*`, `db.*`,
 `user.*`); `event` is `<module>.<thing that happened>`.
+
+## UI and styles
+
+Build screens from `ctx.fns.procs.ui`: components own their markup, classes and
+plain CSS. Use `stack` / `hStack` / `grid` for layout and component parameters
+(`size`, `tone`, `variant`) for presentation, not utility class strings. `class`
+is an escape hatch for a screen-specific component, not a second styling API.
+Screen-specific rules live next to that screen in `$style_<name>.css`.
+
+Stylesheets are bundled in-process by `Bun.build`, cached in memory and served
+with HTTP revalidation. CSS imports are inlined; absolute asset URLs remain
+routes. A stylesheet or imported `.css` edit rebuilds the registered sheets and
+notifies open tabs. Markup edits do not compile CSS. A failed rebuild retains
+the last successful CSS, including across route-table reloads.
+
+`grid({ columns: 2 })` keeps its phone fallback. For pane-relative breakpoints,
+use `grid({ columns: { narrow: 1, medium: 2, wide: 3 }, body })` (48rem / 64rem).
 
 ## The REPL — the primary tool
 

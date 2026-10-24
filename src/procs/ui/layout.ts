@@ -22,8 +22,8 @@ ${(ctx.state.procs?.styles ?? []).map((s: any) => `<link data-css rel="styleshee
 ${[...new Set((ctx.state.procs?.modules ?? []).flatMap((m: any) => m.clients ?? []))].map((src: any) => `<script src="${esc(ctx.fns.procs.ui.asset({ href: src }))}" defer></script>`).join("\n")}
 ${opts.headExtra ?? ""}
 </head>
-<body class="min-h-screen bg-[var(--color-asx-background-body)] text-[var(--color-asx-text-primary)] text-sm">
-<main id="main" class="p-6">${opts.main}</main>
+<body>
+<main id="main" class="asx-main">${opts.main}</main>
 </body>
 </html>`;
 }

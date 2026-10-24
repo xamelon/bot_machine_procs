@@ -32,6 +32,11 @@ export default async function (ctx: Context, _session: Session | null, opts: { s
         }
     }
 
+    // Reloading routes must not discard the last good CSS. A subsequent style
+    // rebuild replaces it on success and retains it on a syntax/import error.
+    for (const style of draft.state.procs.styles) {
+        style.css = ctx.state.procs.styles?.find(previous => previous.abs === style.abs)?.css;
+    }
     ctx.state.procs.styles = draft.state.procs.styles;
     ctx.state.procs.http.middleware = draft.state.procs.http.middleware;
     ctx.state.procs.http.routes = draft.state.procs.http.routes;

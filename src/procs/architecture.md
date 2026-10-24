@@ -290,7 +290,7 @@ the part after it is the kind and the parts after that are its arguments.
 | `notes/$migration_001_notes.ts` | migration | collect, apply in id order, record | a table that exists |
 | `$cli_hello.ts` | cli | collect as a command | `bun script/cli.ts hello` |
 | `procs/ui/$script_htmx.js` | script | bundle on request (browser target) | `GET /procs/ui/htmx.js` |
-| `procs/styles/$style_app.css` | style | compile with Tailwind, cache, serve | `GET /procs/styles/app.css` |
+| `procs/styles/$style_app.css` | style | bundle with Bun, keep in memory, serve | `GET /procs/styles/app.css` |
 | `greeter/$phrase_polite.json` | **whatever `greeter` called it** | its loader parses and keeps it | `ctx.state.greeter.phrases["greeter:polite"]` |
 
 Almost every row has a working example on disk — the framework's own under

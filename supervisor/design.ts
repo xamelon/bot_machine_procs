@@ -41,11 +41,10 @@ export function designCss(): string {
         const parts: string[] = [];
         for (const { prelude, body } of blocks(readFileSync(APP_CSS, "utf8"))) {
             if (prelude === "@font-face" && body.includes("Golos")) parts.push(`@font-face{${body.replaceAll("/procs/styles/font/", "/_auth/font/")}}`);
-            else if (prelude === "@theme" && body.includes("--font-sans")) parts.push(`:root{${body}}`);
+            else if (prelude === ":root" && body.includes("--font-sans")) parts.push(`:root{${body}}`);
         }
         for (const { prelude, body } of blocks(readFileSync(CORE_CSS, "utf8"))) {
-            if (prelude === "@theme") parts.push(`:root{${body}}`);
-            else if (prelude.startsWith(":root")) parts.push(`${prelude}{${body}}`);
+            if (prelude.startsWith(":root")) parts.push(`${prelude}{${body}}`);
             else if (!prelude.startsWith("@") && prelude.split(",").every(s => COMPONENTS.some(p => s.trim().startsWith(p)))) parts.push(`${prelude}{${body}}`);
         }
         return parts.join("\n");

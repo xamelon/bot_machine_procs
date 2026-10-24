@@ -12,7 +12,7 @@
 // is the thing that was looked for in the words of whoever looked (`patient
 // seed-anna`), because "Not Found" alone never says *what* was not found.
 export default function (ctx: Context, _session: Session | null, opts: { what?: string; url?: string; back?: { label: string; href: string } }) {
-    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    const ui = ctx.fns.procs.ui;
     const what = opts.what?.trim();
     const back = opts.back;
 
@@ -25,12 +25,8 @@ export default function (ctx: Context, _session: Session | null, opts: { what?: 
             main: ctx.fns.procs.ui.banner({
                 tone: "warning",
                 body: what ? `There is no ${what}.` : "There is nothing at this address.",
-            }) + (opts.url ? `<p class="mt-2 text-xs text-[var(--color-asx-text-secondary)]"><span class="font-mono">${esc(opts.url)}</span></p>` : "")
-                + (back
-                    ? `<p class="mt-4"><a class="ui-focusable text-2xs text-text-link hover:underline" href="${esc(back.href)}"
-                           hx-get="${esc(back.href)}" hx-target="#main" hx-swap="innerHTML" hx-push-url="true"
-                           ${ctx.fns.procs.ui.attr({ action: "back", id: "not-found" })}>← ${esc(back.label)}</a></p>`
-                    : ""),
+            }) + (opts.url ? ui.text({ as: "p", size: "supporting", tone: "secondary", children: ui.code({ code: opts.url }) }) : "")
+                + (back ? ui.button({ label: back.label, icon: "ph-arrow-left", href: back.href, get: back.href, push: true, variant: "ghost", size: "sm", action: "back", id: "not-found" }) : ""),
         }),
     };
 }

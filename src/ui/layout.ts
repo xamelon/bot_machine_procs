@@ -7,7 +7,7 @@ export default function (ctx: Context, session: Session | null, opts: { title?: 
     if (session?.public) {
         const esc = (s: any) => ui.escape({ text: s });
         const sheets = (ctx.state.procs?.styles ?? []).filter((s: any) => s.href.startsWith("/procs/")).map((s: any) => `<link rel="stylesheet" href="${esc(s.href)}">`).join("");
-        return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(opts.title ?? "")}</title><link rel="icon" href="/procs/ui/favicon.svg" type="image/svg+xml">${sheets}</head><body class="min-h-screen bg-[var(--color-asx-background-body)] text-[var(--color-asx-text-primary)] text-sm"><main id="main" class="mx-auto max-w-xl p-6">${opts.main}</main></body></html>`;
+        return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(opts.title ?? "")}</title><link rel="icon" href="/procs/ui/favicon.svg" type="image/svg+xml">${sheets}</head><body><main id="main" class="asx-main asx-main--reading">${opts.main}</main></body></html>`;
     }
     const nav = ctx.fns.bot.nav({ path: session?.url?.pathname ?? "/" });
     const templates = (["user", "assistant", "system"] as const).map(sender =>
@@ -30,7 +30,7 @@ export default function (ctx: Context, session: Session | null, opts: { title?: 
         body: ui.chatMessageList({ align: "top" }).replace('class="asx-chat-message-list__inner"', 'data-agent-messages aria-label="Conversation" class="asx-chat-message-list__inner"'),
         composer,
     })}${templates}${toolTemplate}</aside>`;
-    const main = `<main id="main" class="p-6">${opts.main}</main>`;
+    const main = `<main id="main" class="asx-main">${opts.main}</main>`;
     // Pi edits the application, so only an admin gets the panel (the supervisor
     // refuses /_agent/* to everybody else anyway).
     const agent = ctx.fns.team.can({ permission: "agent" });

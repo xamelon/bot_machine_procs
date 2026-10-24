@@ -184,6 +184,7 @@ declare global {
             };
             styles: {
                 build: Injected<typeof import("./procs/styles/build").default>;
+                current: Injected<typeof import("./procs/styles/current").default>;
                 rebuild: Injected<typeof import("./procs/styles/rebuild").default>;
             };
             ui: {
@@ -245,6 +246,7 @@ declare global {
                 fieldLabel: Injected<typeof import("./procs/ui/fieldLabel").default>;
                 fieldStatus: Injected<typeof import("./procs/ui/fieldStatus").default>;
                 fileInput: Injected<typeof import("./procs/ui/fileInput").default>;
+                form: Injected<typeof import("./procs/ui/form").default>;
                 formLayout: Injected<typeof import("./procs/ui/formLayout").default>;
                 grid: Injected<typeof import("./procs/ui/grid").default>;
                 hStack: Injected<typeof import("./procs/ui/hStack").default>;

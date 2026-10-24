@@ -36,17 +36,16 @@ export default function (ctx: Context) {
         center: segmented,
         end: ctx.fns.procs.ui.button({ label: "Export", variant: "secondary", icon: "ph-download-simple" }),
     });
-    const selectable = `<div class="grid gap-3 md:grid-cols-3">
+    const selectable = `${ctx.fns.procs.ui.grid({ gap: 3, columns: { medium: 3 }, body: `
         ${ctx.fns.procs.ui.selectableCard({ title: "Automatic", body: "Let the bot assign conversations.", selected: true, elevation: "low" })}
         ${ctx.fns.procs.ui.selectableCard({ title: "Manual", body: "Route every message to inbox.", variant: "purple" })}
         ${ctx.fns.procs.ui.selectableCard({ title: "Priority", body: "Escalate VIP users first.", variant: "warning" })}
-    </div>`;
-    const status = `<div class="flex flex-wrap items-center gap-4 text-sm text-[var(--color-asx-text-secondary)]">
-        <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "success", label: "healthy" })} Healthy</span>
-        <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "warning", label: "delayed" })} Delayed</span>
-        <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "error", label: "down" })} Down</span>
-        <span class="inline-flex items-center gap-2">${["telegram", "vk", "max", "echo"].map(platform => ctx.fns.procs.ui.platform({ platform })).join("")}${ctx.fns.procs.ui.platform({ platform: "tg", size: "sm" })}</span>
-    </div>`;
+    ` })}`;
+    const status = ctx.fns.procs.ui.hStack({ gap: 4, align: "center", wrap: true, body:
+        ([['success', 'Healthy'], ['warning', 'Delayed'], ['error', 'Down']] as const).map(([tone, label]) =>
+            ctx.fns.procs.ui.hStack({ gap: 2, align: "center", body: ctx.fns.procs.ui.statusDot({ tone, label }) + ctx.fns.procs.ui.text({ text: label, tone: "secondary" }) })
+        ).join("") + ctx.fns.procs.ui.hStack({ gap: 2, align: "center", body: ["telegram", "vk", "max", "echo"].map(platform => ctx.fns.procs.ui.platform({ platform })).join("") + ctx.fns.procs.ui.platform({ platform: "tg", size: "sm" }) })
+    });
     const empty = ctx.fns.procs.ui.emptyState({ title: "No broadcasts yet", body: "Create your first campaign when you are ready.", icon: "ph-paper-plane-tilt", action: ctx.fns.procs.ui.button({ label: "New broadcast", variant: "primary" }) });
     const command = ctx.fns.procs.ui.commandMenu({ label: "Open command menu", items: [
         { label: "Create broadcast", description: "Start a new campaign", icon: "ph-paper-plane-tilt", badge: "New" },
@@ -83,7 +82,7 @@ export default function (ctx: Context) {
         { key: "customer", label: "Customer", icon: "ph-user", operators: [{ key: "is", label: "is", type: "entity_list", options: [{ label: "Alice", value: "alice" }, { label: "Bob", value: "bob" }, { label: "Charlie", value: "charlie" }] }] },
         { key: "created", label: "Created", icon: "ph-calendar", operators: [{ key: "after", label: "after", type: "date" }, { key: "between", label: "between", type: "date_range" }] },
     ] });
-    const choice = `<div class="grid gap-4 md:grid-cols-2">
+    const choice = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
         ${ctx.fns.procs.ui.selector({ name: "assignee", label: "Selector", value: "masha", items: [
             { label: "Masha", value: "masha", description: "Online", icon: "ph-user" },
             { label: "Roma", value: "roma", description: "Away", icon: "ph-user" },
@@ -94,24 +93,24 @@ export default function (ctx: Context) {
             { label: "Bob Smith", value: "bob", description: "bob@example.com", icon: "ph-user-circle" },
             { label: "Charlie Chen", value: "charlie", description: "charlie@example.com", icon: "ph-user-circle" },
         ] })}
-    </div>`;
-    const formControls = `<div class="grid gap-4 md:grid-cols-2">
-        <div class="grid gap-3">
+    ` })}`;
+    const formControls = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
+        ${ctx.fns.procs.ui.stack({ gap: 3, body: `
             ${ctx.fns.procs.ui.switch({ name: "auto", label: "Auto assignment", description: "Route new chats automatically", checked: true })}
             ${ctx.fns.procs.ui.checkboxInput({ name: "notify", label: "Notify operators", description: "Send alerts for high priority chats", checked: true })}
-        </div>
+        ` })}
         ${ctx.fns.procs.ui.radioList({ name: "sla", value: "standard", items: [
             { label: "Fast", value: "fast", description: "Reply within 5 minutes" },
             { label: "Standard", value: "standard", description: "Reply within 1 hour" },
             { label: "Batch", value: "batch", description: "Process later" },
         ] })}
-    </div>`;
+    ` })}`;
     const pagination = ctx.fns.procs.ui.pagination({ page: 4, total: 12, href: "/astryx" });
-    const advancedOverlays = `<div class="flex flex-wrap items-center gap-3">
+    const advancedOverlays = `${ctx.fns.procs.ui.hStack({ gap: 3, wrap: true, align: "center", body: `
         ${ctx.fns.procs.ui.tooltip({ content: "Tiny contextual help", trigger: ctx.fns.procs.ui.button({ label: "Hover tooltip", variant: "secondary" }) })}
         ${ctx.fns.procs.ui.popover({ title: "Popover", body: "A small click-open surface for compact controls.", trigger: ctx.fns.procs.ui.button({ label: "Open popover", variant: "secondary" }) })}
         ${ctx.fns.procs.ui.hoverCard({ title: "Masha Ivanova", body: "Senior operator · online now", trigger: ctx.fns.procs.ui.avatar({ name: "Masha Ivanova", status: "success" }) })}
-        ${ctx.fns.procs.ui.contextMenu({ body: `<span class="asx-card inline-block cursor-context-menu px-4 py-3">Right-click me</span>`, items: [
+        ${ctx.fns.procs.ui.contextMenu({ body: ctx.fns.procs.ui.card({ body: ctx.fns.procs.ui.text({ text: "Right-click me" }) }), items: [
             { label: "Open", icon: "ph-arrow-square-out" },
             { label: "Duplicate", icon: "ph-copy" },
             { label: "Delete", icon: "ph-trash", danger: true },
@@ -135,8 +134,8 @@ export default function (ctx: Context) {
             { label: "Inbox", type: "radio", checked: true, name: "folder", value: "inbox" },
             { label: "Archive", type: "radio", checked: false, name: "folder", value: "archive" },
         ] })}
-    </div>`;
-    const inputBatch = `<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    ` })}`;
+    const inputBatch = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2, wide: 3 }, body: `
         ${ctx.fns.procs.ui.numberInput({ name: "limit", label: "Number", value: 25, min: 1, max: 100 })}
         ${ctx.fns.procs.ui.numberStepper({ name: "retries", label: "Number stepper", value: 3, min: 0, max: 10 })}
         ${ctx.fns.procs.ui.slider({ name: "confidence", label: "Slider", value: 64, showValue: true })}
@@ -145,10 +144,10 @@ export default function (ctx: Context) {
         ${ctx.fns.procs.ui.dateRangeInput({ startName: "from", endName: "to", label: "Date range", start: "2026-01-01", end: "2026-01-31" })}
         ${ctx.fns.procs.ui.fileInput({ name: "file", label: "File input", accept: ".csv,.txt" })}
         ${ctx.fns.procs.ui.textInput({ name: "email", label: "TextInput", type: "email", placeholder: "alice@example.com", description: "Field shell included", status: { type: "success", message: "Looks good" } })}
-        ${ctx.fns.procs.ui.textArea({ name: "notes", label: "TextArea", placeholder: "Write notes…", rows: 3, status: { type: "warning", message: "Keep it short" }, statusVariant: "detached" })}
+        ${ctx.fns.procs.ui.textarea({ name: "notes", label: "TextArea", placeholder: "Write notes…", rows: 3, status: { type: "warning", message: "Keep it short" }, statusVariant: "detached" })}
         ${ctx.fns.procs.ui.dateTimeInput({ name: "scheduled_at", label: "DateTimeInput", value: "2026-01-15T14:30", description: "Native segmented fallback" })}
-    </div>`;
-    const primitives = `<div class="grid gap-4">
+    ` })}`;
+    const primitives = `${ctx.fns.procs.ui.stack({ gap: 4, body: `
         ${ctx.fns.procs.ui.buttonGroup({ body: [ctx.fns.procs.ui.button({ label: "Day" }), ctx.fns.procs.ui.button({ label: "Week", variant: "primary" }), ctx.fns.procs.ui.button({ label: "Month" })].join("") })}
         ${ctx.fns.procs.ui.inputGroup({ start: "@", control: ctx.fns.procs.ui.input({ name: "handle", placeholder: "username" }), end: ctx.fns.procs.ui.kbd({ label: "↵" }) })}
         ${ctx.fns.procs.ui.formLayout({ columns: 2, body: ctx.fns.procs.ui.field({ label: "First", control: ctx.fns.procs.ui.input({ name: "first" }) }) + ctx.fns.procs.ui.field({ label: "Last", control: ctx.fns.procs.ui.input({ name: "last" }) }) })}
@@ -157,55 +156,55 @@ export default function (ctx: Context) {
             ctx.fns.procs.ui.clickableCard({ title: "Broadcasts", body: "Campaigns and sends", icon: "ph-megaphone" }),
         ].join(""), columns: 2 })}
         ${ctx.fns.procs.ui.item({ title: "Assigned to Masha", description: "Updated 2 minutes ago", start: ctx.fns.procs.ui.avatar({ name: "Masha Ivanova", size: "sm" }), end: ctx.fns.procs.ui.token({ label: "live", selected: true }) })}
-        <div class="flex flex-wrap gap-2">${ctx.fns.procs.ui.token({ label: "status", value: "open", removable: true })}${ctx.fns.procs.ui.token({ label: "priority", value: "high", selected: true })}${ctx.fns.procs.ui.indicator({ tone: "success", label: "3" })}</div>
-    </div>`;
-    const finalGaps = `<div class="grid gap-4 md:grid-cols-2">
-        <div class="grid gap-3">
+        ${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, body: `${ctx.fns.procs.ui.token({ label: "status", value: "open", removable: true })}${ctx.fns.procs.ui.token({ label: "priority", value: "high", selected: true })}${ctx.fns.procs.ui.indicator({ tone: "success", label: "3" })}` })}
+    ` })}`;
+    const finalGaps = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
+        ${ctx.fns.procs.ui.stack({ gap: 3, body: `
             ${ctx.fns.procs.ui.complexSelector({ name: "plan", label: "Complex selector", value: "pro", items: [
                 { label: "Starter", value: "starter", description: "Small teams", icon: "ph-rocket" },
                 { label: "Pro", value: "pro", description: "Automation and routing", icon: "ph-lightning", badge: "Popular" },
             ] })}
             ${ctx.fns.procs.ui.collapsible({ title: "Collapsible", open: true, body: "Native details with Astryx styling." })}
-        </div>
-        <div class="grid gap-3">
+        ` })}
+        ${ctx.fns.procs.ui.stack({ gap: 3, body: `
             ${ctx.fns.procs.ui.fieldStatus({ tone: "success", message: "Configuration looks valid" })}
-            <div class="flex flex-wrap gap-3">${ctx.fns.procs.ui.icon({ name: "ph-sparkle", tone: "accent", size: "lg", label: "Sparkle" })}${ctx.fns.procs.ui.visuallyHidden({ text: "Screen reader only text" })}</div>
+            ${ctx.fns.procs.ui.hStack({ gap: 3, wrap: true, body: `${ctx.fns.procs.ui.icon({ name: "ph-sparkle", tone: "accent", size: "lg", label: "Sparkle" })}${ctx.fns.procs.ui.visuallyHidden({ text: "Screen reader only text" })}` })}
             ${ctx.fns.procs.ui.scrollableArea({ height: "140px", body: Array.from({ length: 10 }, (_, i) => ctx.fns.procs.ui.item({ title: `Scrollable item ${i + 1}`, description: "Inside ScrollableArea" })).join("") })}
-        </div>
-    </div>`;
-    const interactionGaps = `<div class="grid gap-4 md:grid-cols-2">
-        <div class="grid content-start gap-3">
+        ` })}
+    ` })}`;
+    const interactionGaps = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
+        ${ctx.fns.procs.ui.stack({ gap: 3, body: `
             ${ctx.fns.procs.ui.tokenizer({ name: "tags", values: ["urgent", "vip"], suggestions: ["urgent", "vip", "billing", "bug", "sales"], placeholder: "Add tag…" })}
             ${ctx.fns.procs.ui.checkboxList({ name: "features", values: ["email"], items: [
                 { label: "Email", value: "email", description: "Send email updates" },
                 { label: "SMS", value: "sms", description: "Send text messages" },
                 { label: "Push", value: "push", description: "Mobile push alerts" },
             ] })}
-            <div class="flex flex-wrap gap-2">${ctx.fns.procs.ui.toggleButton({ label: "Bold", icon: "ph-text-b", pressed: true })}${ctx.fns.procs.ui.toggleButton({ label: "Italic", icon: "ph-text-italic" })}</div>
-        </div>
-        <div class="flex flex-wrap content-start gap-2">
+            ${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, body: `${ctx.fns.procs.ui.toggleButton({ label: "Bold", icon: "ph-text-b", pressed: true })}${ctx.fns.procs.ui.toggleButton({ label: "Italic", icon: "ph-text-italic" })}` })}
+        ` })}
+        ${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, body: `
             ${ctx.fns.procs.ui.alertDialog({ id: "asx-alert-demo", title: "Delete broadcast?", body: "This action cannot be undone.", trigger: ctx.fns.procs.ui.button({ label: "Open alert", variant: "destructive" }), confirmLabel: "Delete" })}
             ${ctx.fns.procs.ui.bottomSheet({ id: "asx-sheet-demo", title: "Bottom sheet", trigger: ctx.fns.procs.ui.button({ label: "Open sheet", variant: "secondary" }), body: ctx.fns.procs.ui.list({ items: [
                 { title: "Quick reply", description: "Send a saved answer", icon: "ph-chat-circle" },
                 { title: "Assign", description: "Move to an operator", icon: "ph-user-plus" },
             ] }) })}
-        </div>
-    </div>`;
-    const dateTime = `<div class="grid gap-4 md:grid-cols-[auto_1fr]">
+        ` })}
+    ` })}`;
+    const dateTime = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: "auto 1fr" }, body: `
         ${ctx.fns.procs.ui.calendar({ name: "scheduled", value: "2026-01-15" })}
-        <div class="grid content-start gap-3">
+        ${ctx.fns.procs.ui.stack({ gap: 3, body: `
             ${ctx.fns.procs.ui.item({ title: "Created", description: "Absolute timestamp", end: ctx.fns.procs.ui.timestamp({ value: "2026-01-15T14:30:00Z", format: "datetime" }) })}
             ${ctx.fns.procs.ui.item({ title: "Last updated", description: "Relative timestamp", end: ctx.fns.procs.ui.timestamp({ value: Date.now() - 1000 * 60 * 42, format: "relative" }) })}
-            <div class="flex flex-wrap gap-2">${ctx.fns.procs.ui.timer({ seconds: 125, tone: "success" })}${ctx.fns.procs.ui.timer({ seconds: 35, tone: "warning" })}${ctx.fns.procs.ui.timer({ seconds: 8, tone: "error" })}</div>
-        </div>
-    </div>`;
-    const richContent = `<div class="grid gap-4 lg:grid-cols-2">
-        <div class="grid gap-4">
+            ${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, body: `${ctx.fns.procs.ui.timer({ seconds: 125, tone: "success" })}${ctx.fns.procs.ui.timer({ seconds: 35, tone: "warning" })}${ctx.fns.procs.ui.timer({ seconds: 8, tone: "error" })}` })}
+        ` })}
+    ` })}`;
+    const richContent = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { wide: 2 }, body: `
+        ${ctx.fns.procs.ui.stack({ gap: 4, body: `
             ${ctx.fns.procs.ui.markdown({ markdown: "## Release notes\nSmall components now compose into larger surfaces.\n- Fast\n- Server-rendered\n- React-free" })}
             ${ctx.fns.procs.ui.codeBlock({ language: "ts", code: "ctx.fns.procs.ui.card({ title: 'Hello', body })" })}
             ${ctx.fns.procs.ui.citation({ title: "Astryx source", source: "github.com/facebook/astryx", href: "https://github.com/facebook/astryx", excerpt: "Design system components ported to server-rendered HTML." })}
-        </div>
-        <div class="grid gap-4">
+        ` })}
+        ${ctx.fns.procs.ui.stack({ gap: 4, body: `
             ${ctx.fns.procs.ui.chat({ messages: [
                 { author: "Alice", body: "Can you check the broadcast?", time: "10:12" },
                 { author: "Bot", body: "Sure, draft is ready for review.", time: "10:13", mine: true, status: "read" },
@@ -223,9 +222,9 @@ export default function (ctx: Context) {
                 ctx.fns.procs.ui.card({ title: "Slide three", body: "Native scrolling." }),
             ] })}
             ${ctx.fns.procs.ui.lightbox({ src: "https://picsum.photos/900/600", thumb: "https://picsum.photos/360/240", alt: "Random preview" })}
-        </div>
-    </div>`;
-    const chatShowcase = `<div class="grid gap-6">
+        ` })}
+    ` })}`;
+    const chatShowcase = `${ctx.fns.procs.ui.stack({ gap: 6, body: `
         ${ctx.fns.procs.ui.chatLayout({ height: "560px", header: ctx.fns.procs.ui.item({ title: "Alice Johnson", description: "Online · customer", start: ctx.fns.procs.ui.avatar({ name: "Alice Johnson", status: "success", size: "sm" }), end: ctx.fns.procs.ui.badge({ label: "VIP", variant: "purple" }) }), body: ctx.fns.procs.ui.chatMessageList({ density: "balanced", body: [
             ctx.fns.procs.ui.chatSystemMessage({ body: "Alice joined from web chat", icon: "ph-globe" }),
             ctx.fns.procs.ui.chatMessage({ sender: "assistant", author: "Operator", avatar: "none", children: [
@@ -239,13 +238,13 @@ export default function (ctx: Context) {
                 { name: "lookup_order", status: "complete", target: "ORD-1043", duration: "184ms", resultDetail: "UPS Ground · arriving today" },
                 { name: "draft_reply", status: "running", target: "shipping update" },
             ] }) }) }),
-        ].join("") }), scrollButton: ctx.fns.procs.ui.chatLayoutScrollButton({ visible: true }), composer: ctx.fns.procs.ui.chatComposer({ name: "chat-reply", placeholder: "Message Alice…", footer: `<span class="asx-text" data-size="supporting" data-tone="secondary">Shift+Enter for newline</span>`, actions: ctx.fns.procs.ui.button({ label: "Attach", variant: "ghost", icon: "ph-paperclip", size: "sm" }) }) })}
-        <div class="grid gap-4 md:grid-cols-3">
+        ].join("") }), scrollButton: ctx.fns.procs.ui.chatLayoutScrollButton({ visible: true }), composer: ctx.fns.procs.ui.chatComposer({ name: "chat-reply", placeholder: "Message Alice…", footer: ctx.fns.procs.ui.text({ text: "Shift+Enter for newline", size: "supporting", tone: "secondary" }), actions: ctx.fns.procs.ui.button({ label: "Attach", variant: "ghost", icon: "ph-paperclip", size: "sm" }) }) })}
+        ${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 3 }, body: `
             ${ctx.fns.procs.ui.chatMessageList({ density: "compact", align: "top", body: ctx.fns.procs.ui.chatMessage({ sender: "assistant", author: "Compact", body: "Compact density bubble", avatar: "none", timestamp: "9:01" }) })}
             ${ctx.fns.procs.ui.chatMessageList({ density: "balanced", align: "top", body: ctx.fns.procs.ui.chatMessage({ sender: "user", author: "Balanced", body: "Balanced density bubble", avatar: "none", timestamp: "9:02", status: "delivered" }) })}
             ${ctx.fns.procs.ui.chatMessageList({ density: "spacious", align: "top", body: ctx.fns.procs.ui.chatMessage({ sender: "assistant", author: "Spacious", body: "Spacious density bubble", avatar: "none", timestamp: "9:03" }) })}
-        </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        ` })}
+        ${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
             ${ctx.fns.procs.ui.chatMessageList({ density: "balanced", align: "top", body: [
                 ctx.fns.procs.ui.chatMessage({ sender: "assistant", author: "Filled bubble", avatar: "none", body: "Default filled bubble" }),
                 ctx.fns.procs.ui.chatMessage({ sender: "assistant", author: "Ghost bubble", avatar: "none", variant: "ghost", width: "100%", body: "Ghost keeps text padding and column alignment but removes the bubble background." }),
@@ -254,16 +253,16 @@ export default function (ctx: Context) {
                 ctx.fns.procs.ui.chatMessage({ sender: "user", author: "User filled", avatar: "none", body: "User filled bubble", status: "read", timestamp: "10:21" }),
                 ctx.fns.procs.ui.chatMessage({ sender: "user", author: "User ghost", avatar: "none", variant: "ghost", width: "100%", body: "User ghost variant with explicit full-column width.", status: "delivered", timestamp: "10:22" }),
             ].join("") })}
-        </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        ` })}
+        ${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `
             ${ctx.fns.procs.ui.chatComposer({ placeholder: "Default composer…", footer: "Footer slot", actions: ctx.fns.procs.ui.chatDictationButton({ listening: true }) + ctx.fns.procs.ui.button({ label: "Magic", variant: "secondary", icon: "ph-sparkle", size: "sm" }) })}
             ${ctx.fns.procs.ui.chatComposer({ placeholder: "Flat composer with top warning…", elevation: "none", status: { type: "warning", message: "Customer is waiting", position: "top" } })}
             ${ctx.fns.procs.ui.chatComposer({ placeholder: "Disabled while streaming…", disabled: true, status: { type: "error", message: "Connection interrupted" } })}
             ${ctx.fns.procs.ui.chatComposer({ placeholder: "Stop state…", stop: true, value: "Generating response…" })}
             ${ctx.fns.procs.ui.chatComposer({ placeholder: "Composer with drawer…", drawer: ctx.fns.procs.ui.chatComposerDrawer({ count: 3, label: "attachments", body: [ctx.fns.procs.ui.token({ label: "receipt.pdf" }), ctx.fns.procs.ui.token({ label: "photo.jpg" }), ctx.fns.procs.ui.chatPastedTextToken({ text: "Long pasted customer context", label: "Customer context" })].join("") }) })}
             ${ctx.fns.procs.ui.chatMessage({ sender: "assistant", avatar: "none", children: ctx.fns.procs.ui.chatMessageBubble({ body: "", variant: "ghost", width: "100%", metadata: ctx.fns.procs.ui.chatTokenizedText({ text: "Hi @alice, order #1043 is ready", tokens: [{ value: "@alice", label: "Alice", variant: "blue", icon: "ph-user" }, { value: "#1043", label: "#1043", variant: "purple", icon: "ph-receipt" }] }) }) })}
-        </div>
-    </div>`;
+        ` })}
+    ` })}`;
     const shellDemo = ctx.fns.procs.ui.appShell({
         side: ctx.fns.procs.ui.sideNav({ title: "Astryx Bot", menus: [
             { label: "Main", items: [
@@ -289,8 +288,8 @@ export default function (ctx: Context) {
             { label: "Setup", icon: "ph-gear" },
         ] }),
     });
-    const structure = `<div class="grid gap-4 lg:grid-cols-[1fr_220px]">
-        <div class="grid gap-4">
+    const structure = `${ctx.fns.procs.ui.grid({ gap: 4, columns: { wide: "1fr 220px" }, body: `
+        ${ctx.fns.procs.ui.stack({ gap: 4, body: `
             ${ctx.fns.procs.ui.treeList({ label: "Flows", items: [
                 { label: "Onboarding", icon: "ph-folder", selected: true, children: [
                     { label: "Welcome message", icon: "ph-chat-circle" },
@@ -302,8 +301,8 @@ export default function (ctx: Context) {
                 ] },
             ] })}
             ${ctx.fns.procs.ui.resizable({ initial: 42, start: ctx.fns.procs.ui.code({ code: "event.type == 'message'", block: true }), end: ctx.fns.procs.ui.emptyState({ compact: true, icon: "ph-layout", title: "Preview", body: "Drag the divider." }) })}
-        </div>
-        <div class="grid gap-4 content-start">
+        ` })}
+        ${ctx.fns.procs.ui.stack({ gap: 4, body: `
             ${ctx.fns.procs.ui.outline({ items: [
                 { label: "Overview", href: "#", current: true },
                 { label: "Fields", href: "#", level: 2 },
@@ -317,9 +316,9 @@ export default function (ctx: Context) {
                 ctx.fns.procs.ui.badge({ label: "WhatsApp", variant: "success" }),
                 ctx.fns.procs.ui.badge({ label: "SMS", variant: "warning" }),
             ] })}
-        </div>
-    </div>`;
-    const wizardStepper = `<div class="grid gap-6">
+        ` })}
+    ` })}`;
+    const wizardStepper = `${ctx.fns.procs.ui.stack({ gap: 6, body: `
         ${ctx.fns.procs.ui.stepper({ activeStep: 1, steps: [
             { label: "Account", description: "User and channel", status: "success" },
             { label: "Routing", description: "Assignment rules" },
@@ -330,20 +329,20 @@ export default function (ctx: Context) {
             { label: "Map fields", description: "Choose destination columns", content: ctx.fns.procs.ui.badge({ label: "Current", variant: "blue" }) },
             { label: "Run", description: "Start processing", disabled: true },
         ] })}
-    </div>`;
-    const foundation = `<div class="grid gap-4">
+    ` })}`;
+    const foundation = `${ctx.fns.procs.ui.stack({ gap: 4, body: `
         <div>${ctx.fns.procs.ui.breadcrumbs({ items: [{ label: "Bot", href: "/bot" }, { label: "Chats", href: "/bot/chats" }, { label: "Conversation" }] })}</div>
-        <div class="grid gap-1">${ctx.fns.procs.ui.heading({ text: "Conversation overview", level: 3 })}${ctx.fns.procs.ui.text({ text: "Typography primitives with Astryx tokens.", tone: "secondary", as: "p" })}</div>
-        <div class="flex flex-wrap items-center gap-3">${ctx.fns.procs.ui.avatar({ name: "Masha Ivanova", status: "success" })}${ctx.fns.procs.ui.avatarGroup({ items: [{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }, { name: "Dora" }, { name: "Eve" }] })}${ctx.fns.procs.ui.kbd({ label: "⌘K" })}${ctx.fns.procs.ui.code({ code: "ctx.fns.astryx" })}</div>
-        <div class="grid gap-2 md:grid-cols-3"><div>${ctx.fns.procs.ui.skeleton({ lines: 3 })}</div><div class="flex items-center gap-3">${ctx.fns.procs.ui.spinner({})}${ctx.fns.procs.ui.text({ text: "Loading…", tone: "secondary" })}</div><div>${ctx.fns.procs.ui.progressBar({ value: 64, tone: "success" })}</div></div>
+        ${ctx.fns.procs.ui.stack({ gap: 1, body: `${ctx.fns.procs.ui.heading({ text: "Conversation overview", level: 3 })}${ctx.fns.procs.ui.text({ text: "Typography primitives with Astryx tokens.", tone: "secondary", as: "p" })}` })}
+        ${ctx.fns.procs.ui.hStack({ gap: 3, wrap: true, align: "center", body: `${ctx.fns.procs.ui.avatar({ name: "Masha Ivanova", status: "success" })}${ctx.fns.procs.ui.avatarGroup({ items: [{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }, { name: "Dora" }, { name: "Eve" }] })}${ctx.fns.procs.ui.kbd({ label: "⌘K" })}${ctx.fns.procs.ui.code({ code: "ctx.fns.astryx" })}` })}
+        ${ctx.fns.procs.ui.grid({ gap: 2, columns: { medium: 3 }, body: `<div>${ctx.fns.procs.ui.skeleton({ lines: 3 })}</div>${ctx.fns.procs.ui.hStack({ gap: 3, align: "center", body: `${ctx.fns.procs.ui.spinner({})}${ctx.fns.procs.ui.text({ text: "Loading…", tone: "secondary" })}` })}<div>${ctx.fns.procs.ui.progressBar({ value: 64, tone: "success" })}</div>` })}
         ${ctx.fns.procs.ui.blockQuote({ quote: "A boring component library is a good component library.", cite: "Astryx-ish port" })}
-    </div>`;
+    ` })}`;
     return { title: "Astryx", main: ctx.fns.procs.ui.page({ page: "astryx", title: "Astryx core kit", lead: "Server-rendered port, no React.", main: [
         banner,
-        ctx.fns.procs.ui.card({ title: "Actions", body: `<div class="flex flex-wrap gap-2">${b}${s}${g}${d}</div>` }),
+        ctx.fns.procs.ui.card({ title: "Actions", body: `${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, body: `${b}${s}${g}${d}` })}` }),
         ctx.fns.procs.ui.card({ title: "Navigation", body: tabs }),
         ctx.fns.procs.ui.card({ title: "Toolbar", body: toolbar }),
-        ctx.fns.procs.ui.card({ title: "Interactive", body: `<div class="grid gap-4 md:grid-cols-2"><div>${command}</div><div>${multiselect}</div></div>` }),
+        ctx.fns.procs.ui.card({ title: "Interactive", body: `${ctx.fns.procs.ui.grid({ gap: 4, columns: { medium: 2 }, body: `<div>${command}</div><div>${multiselect}</div>` })}` }),
         ctx.fns.procs.ui.card({ title: "Foundation", body: foundation }),
         ctx.fns.procs.ui.card({ title: "Power search", body: powerSearch }),
         ctx.fns.procs.ui.card({ title: "Selector & typeahead", body: choice }),
@@ -360,7 +359,7 @@ export default function (ctx: Context) {
         ctx.fns.procs.ui.card({ title: "Final gaps", body: finalGaps }),
         ctx.fns.procs.ui.card({ title: "Structure", body: structure }),
         ctx.fns.procs.ui.card({ title: "Inputs", body: inputBatch }),
-        ctx.fns.procs.ui.card({ title: "Overlays", body: `<div class="flex flex-wrap items-center gap-2">${dialog}${dropdown}${toast}</div>` }),
+        ctx.fns.procs.ui.card({ title: "Overlays", body: `${ctx.fns.procs.ui.hStack({ gap: 2, wrap: true, align: "center", body: `${dialog}${dropdown}${toast}` })}` }),
         ctx.fns.procs.ui.card({ title: "Selectable cards", body: selectable }),
         ctx.fns.procs.ui.card({ title: "Field", body: field }),
         ctx.fns.procs.ui.card({ title: "Table", body: table }),

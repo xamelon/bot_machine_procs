@@ -7,7 +7,7 @@
 // log line, and — in dev only — the message folded behind a <details>, for the
 // developer or the agent reading the page, not for the person.
 export default function (ctx: Context, _session: Session | null, opts: { id: string; message?: string }) {
-    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    const ui = ctx.fns.procs.ui;
     const dev = ctx.env.NODE_ENV !== "production";
     return {
         title: "Something went wrong",
@@ -15,8 +15,11 @@ export default function (ctx: Context, _session: Session | null, opts: { id: str
         main: ctx.fns.procs.ui.page({
             page: "crashed",
             title: "Something went wrong",
-            main: `${ctx.fns.procs.ui.banner({ tone: "error", body: `This action could not finish. It has been recorded — mention code ${opts.id} if you report it.` })}
-${dev && opts.message ? `<details class="mt-3 text-sm"><summary class="cursor-pointer text-[var(--color-asx-text-secondary)]">details for the developer</summary><pre class="mt-2 overflow-x-auto rounded bg-[var(--color-asx-background-muted)] p-3 text-xs">${esc(opts.message)}</pre></details>` : ""}`,
+            main: ui.banner({ tone: "error", body: `This action could not finish. It has been recorded — mention code ${opts.id} if you report it.` })
+                + (dev && opts.message ? ui.collapsible({
+                    title: "details for the developer",
+                    body: ui.code({ code: opts.message, block: true }),
+                }) : ""),
         }),
     };
 }

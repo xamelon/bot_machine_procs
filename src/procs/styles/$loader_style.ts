@@ -1,24 +1,19 @@
-// `<module>/$style_<name>.css` — a Tailwind input, compiled against the whole
-// scan, cached, and served at the path its name spells. The framework's own
-// stylesheet leads and a module's cascades over it, so the order is the layout's.
+// `<module>/$style_<name>.css` — a plain stylesheet, bundled by Bun
+// (styles.build), kept in memory and served at the path its name spells. The
+// framework's own stylesheet leads and a module's cascades over it, so the order
+// is the layout's.
 export default async function (ctx: Context, _session: Session | null, opts: { entries: any[] }): Promise<void> {
     const routes = (ctx.state.procs.http.routes ??= {});
     const styles = (ctx.state.procs.styles ??= []);
     for (const entry of opts.entries) {
         const style = { href: entry.routePath, abs: entry.abs, key: entry.abs.replace(/[^a-zA-Z0-9]+/g, "_") };
         (routes[style.href] ??= {}).GET = async (rctx: Context) => {
-            // `build` decides what is cached — it keys on the wrapper it
-            // generates, which names every mounted module, so a module added
-            // since the last build is compiled in. Guessing a path here instead
-            // is how a leftover file from an older layout shadowed every build
-            // that came after it.
-            const path = await rctx.fns.procs.styles.build(style);
-            // `no-cache`, not `no-store`: the sheet is 240 KB and changes only when
-            // the code does, so the browser keeps it and revalidates (304) instead of
-            // fetching it again on every navigation. Revalidating is what keeps live
-            // reload correct — watch.ts rebuilds the sheet, and the new bytes carry a
-            // new ETag.
-            return new Response(Bun.file(path), { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-cache" } });
+            const css = await rctx.fns.procs.styles.current({ key: style.key });
+            // `no-cache`, not `no-store`: the browser keeps the sheet and
+            // revalidates it (http.respond gives it an ETag and answers 304), so a
+            // navigation costs one conditional request, and a rebuilt sheet is
+            // picked up the moment its bytes change.
+            return new Response(css, { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-cache" } });
         };
         styles.push(style);
         ctx.fns.procs.log.debug({ event: "load.style", msg: style.href, from: `${entry.root}/${entry.rel}` });

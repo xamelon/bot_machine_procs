@@ -1,4 +1,5 @@
 export default function (ctx: Context, _session: Session | null) {
+    const ui = ctx.fns.procs.ui;
     const rows = ctx.fns.procs.db.select({ sql: `SELECT f.id, f.slug, f.name, f.status, v.version, v.id version_id
         FROM bot_flows f LEFT JOIN bot_flow_versions v ON v.bot_flow_id = f.id ORDER BY f.name` });
     const table = ctx.fns.procs.ui.table({
@@ -10,9 +11,9 @@ export default function (ctx: Context, _session: Session | null) {
                 const chips = connections.filter((connection: any) => linked.includes(connection.publicId))
                     .map((connection: any) => ctx.fns.procs.ui.badge({ label: connection.name, variant: connection.active ? "success" : "neutral" }));
                 const missing = dangling ? ctx.fns.procs.ui.badge({ label: `${dangling} missing`, variant: "warning" }) : "";
-                return chips.length || missing ? `<div class="flex flex-wrap gap-2">${chips.join("")}${missing}</div>` : `<span class="text-base-content/60">none</span>`;
+                return chips.length || missing ? ui.hStack({ gap: 2, wrap: true, body: chips.join("") + missing }) : ui.text({ text: "none", tone: "secondary" });
             } },
-            { key: "version_id", label: "Flow", render: (row) => row.version_id ? `<div class="flex flex-wrap gap-2">${ctx.fns.procs.ui.button({ label: "Edit", href: `/bot/flows/${row.version_id}`, size: "sm" })}${ctx.fns.procs.ui.button({ label: "Backup", href: `/bot/flows/${row.version_id}/backup`, size: "sm" })}<form class="inline" method="post" action="/bot/flows/${row.version_id}/restore" enctype="multipart/form-data"><label class="asx-button" data-variant="secondary" data-size="sm">Restore<input name="backup" type="file" accept="application/json,.json" hidden onchange="this.form.submit()"></label></form></div>` : "" },
+            { key: "version_id", label: "Flow", render: (row) => row.version_id ? ui.hStack({ gap: 2, wrap: true, body: `${ui.button({ label: "Edit", href: `/bot/flows/${row.version_id}`, size: "sm" })}${ui.button({ label: "Backup", href: `/bot/flows/${row.version_id}/backup`, size: "sm" })}<form method="post" action="/bot/flows/${row.version_id}/restore" enctype="multipart/form-data"><label class="asx-button" data-variant="secondary" data-size="sm">Restore<input name="backup" type="file" accept="application/json,.json" hidden onchange="this.form.submit()"></label></form>` }) : "" },
         ],
         rows, empty: "No flows",
     });

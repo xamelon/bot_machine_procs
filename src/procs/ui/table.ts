@@ -25,6 +25,6 @@ export default function (ctx: Context, _session: Session | null, opts: {
         const main = `<tr ${mark}${href ? ` data-href="${esc(href)}" onclick="location.href='${esc(href)}'"` : ""}>${cells}${toggle}</tr>`;
         if (!detail) return main;
         return `${main}<tr class="asx-table__detail" hidden><td colspan="${width}" data-wrap="true">${detail}</td></tr>`;
-    }).join("") || `<tr><td colspan="${width}" class="text-base-content/60">${esc(opts.empty ?? "Nothing here")}</td></tr>`;
+    }).join("") || `<tr><td colspan="${width}" class="asx-table__empty">${esc(opts.empty ?? "Nothing here")}</td></tr>`;
     return `<div class="asx-table-wrap ${esc(opts.class ?? "")}"><table class="asx-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }

@@ -10,7 +10,7 @@
 // host already uses for READMEs and for the chat — so it asks the
 // `procs.ui.markdown` point, and shows the file as text where nobody answers.
 export default async function (ctx: Context, _session: Session | null, opts: { req: Request }) {
-    const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
+    const ui = ctx.fns.procs.ui;
     const name = new URL(opts.req.url).searchParams.get("name") ?? "";
     const module = (ctx.state.procs.modules ?? []).find((m: any) => m.name === name || m.namespaces?.includes(name));
 
@@ -28,15 +28,15 @@ export default async function (ctx: Context, _session: Session | null, opts: { r
     }
 
     const body = await ctx.fns.procs.hooks.first({ name: "procs.ui.markdown", opts: { text } })
-        ?? `<pre class="overflow-x-auto whitespace-pre-wrap font-mono text-xs text-base-content/80">${esc(text)}</pre>`;
+        ?? ui.code({ code: text, block: true, wrap: true });
 
     return {
         title: `${module.name} · skill`,
         main: ctx.fns.procs.ui.page({
             page: "skill",
             title: module.label ?? module.name,
-            lead: `<span class="font-mono">${esc(module.skill)}</span> — what the agent reads before it touches this module.`,
-            main: ctx.fns.procs.ui.card({ class: "mt-4", title: "SKILL.md", body: `<div class="px-4 py-3">${body}</div>` }),
+            lead: `${ui.code({ code: module.skill })} — what the agent reads before it touches this module.`,
+            main: ui.card({ title: "SKILL.md", body }),
         }),
     };
 }
