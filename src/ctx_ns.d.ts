@@ -10,6 +10,7 @@ declare global {
             ack: Injected<typeof import("./bot/ack").default>;
             broadcastPage: Injected<typeof import("./bot/broadcastPage").default>;
             broadcasts: Injected<typeof import("./bot/broadcasts").default>;
+            channelFlows: Injected<typeof import("./bot/channelFlows").default>;
             channelStatus: Injected<typeof import("./bot/channelStatus").default>;
             createBroadcast: Injected<typeof import("./bot/createBroadcast").default>;
             editorPage: Injected<typeof import("./bot/editorPage").default>;
@@ -18,7 +19,9 @@ declare global {
             filterApply: Injected<typeof import("./bot/filterApply").default>;
             filterBar: Injected<typeof import("./bot/filterBar").default>;
             filterCatalog: Injected<typeof import("./bot/filterCatalog").default>;
+            flowChannels: Injected<typeof import("./bot/flowChannels").default>;
             form: Injected<typeof import("./bot/form").default>;
+            formatMessage: Injected<typeof import("./bot/formatMessage").default>;
             get: Injected<typeof import("./bot/get").default>;
             ingest: Injected<typeof import("./bot/ingest").default>;
             input: Injected<typeof import("./bot/input").default>;
@@ -330,6 +333,9 @@ declare global {
             text: Injected<typeof import("../modules/screen/src/screen/text").default>;
             where: Injected<typeof import("../modules/screen/src/screen/where").default>;
         };
+        team: {
+            can: Injected<typeof import("./team/can").default>;
+        };
         tour: {
             play: Injected<typeof import("../modules/screen/src/tour/play").default>;
             review: Injected<typeof import("../modules/screen/src/tour/review").default>;
@@ -410,6 +416,9 @@ declare global {
             type ScreenSnapshot = import("../modules/screen/src/screen/ScreenSnapshot").ScreenSnapshot;
             type State = import("../modules/screen/src/screen/State").State;
         }
+        namespace team {
+            type Session = import("./team/Session").Session;
+        }
         namespace tour {
             type Step = import("../modules/screen/src/tour/Step").Step;
         }
@@ -438,6 +447,6 @@ declare global {
         screen: import("../modules/screen/src/screen/State").State;
     }
 
-    type Session = import("./Session").Session;
+    type Session = import("./Session").Session & types.team.Session;
 }
 export {};

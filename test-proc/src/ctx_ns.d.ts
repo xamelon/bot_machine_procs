@@ -10,6 +10,7 @@ declare global {
             ack: Injected<typeof import("../../src/bot/ack").default>;
             broadcastPage: Injected<typeof import("../../src/bot/broadcastPage").default>;
             broadcasts: Injected<typeof import("../../src/bot/broadcasts").default>;
+            channelFlows: Injected<typeof import("../../src/bot/channelFlows").default>;
             channelStatus: Injected<typeof import("../../src/bot/channelStatus").default>;
             createBroadcast: Injected<typeof import("../../src/bot/createBroadcast").default>;
             editorPage: Injected<typeof import("../../src/bot/editorPage").default>;
@@ -18,7 +19,9 @@ declare global {
             filterApply: Injected<typeof import("../../src/bot/filterApply").default>;
             filterBar: Injected<typeof import("../../src/bot/filterBar").default>;
             filterCatalog: Injected<typeof import("../../src/bot/filterCatalog").default>;
+            flowChannels: Injected<typeof import("../../src/bot/flowChannels").default>;
             form: Injected<typeof import("../../src/bot/form").default>;
+            formatMessage: Injected<typeof import("../../src/bot/formatMessage").default>;
             get: Injected<typeof import("../../src/bot/get").default>;
             ingest: Injected<typeof import("../../src/bot/ingest").default>;
             input: Injected<typeof import("../../src/bot/input").default>;
@@ -331,6 +334,9 @@ declare global {
                 visuallyHidden: Injected<typeof import("../../src/procs/ui/visuallyHidden").default>;
             };
         };
+        team: {
+            can: Injected<typeof import("../../src/team/can").default>;
+        };
         ui: {
             layout: Injected<typeof import("../../src/ui/layout").default>;
             providers: Injected<typeof import("../../src/ui/providers").default>;
@@ -412,6 +418,9 @@ declare global {
                 type SemanticAttr = import("../../src/procs/ui/SemanticAttr").SemanticAttr;
             }
         }
+        namespace team {
+            type Session = import("../../src/team/Session").Session;
+        }
     }
 
     interface CtxState {
@@ -438,6 +447,6 @@ declare global {
         };
     }
 
-    type Session = import("../../src/Session").Session & types.greet.Session;
+    type Session = import("../../src/Session").Session & types.greet.Session & types.team.Session;
 }
 export {};
