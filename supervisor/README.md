@@ -10,13 +10,29 @@ The host never imports app code. It launches runtime (`APP_ROOT/src/$main.ts`) a
 
 Open `/bot/channels` on port 4100: the default bot_procs `src/ui/layout.ts` renders admin and Pi side by side. The chat can be resized or collapsed; its width and collapsed state are saved in browser storage. The flow editor stays inside the content pane. This shell is part of the application's source. `/_control/` is a standalone recovery chat independent of runtime files.
 
-Login: username `admin`; set `CONTROL_PASSWORD` or read the generated password from `.runtime/control/password` (0600). Never publish credentials in a URL. Public hosting requires HTTPS. `SUPERVISOR_HOST` defaults to loopback; Compose binds inside the container and publishes only on host loopback.
+## Accounts and sign-in
+
+Operators sign in at `/_auth/login` with a login and password; there is no shared Basic login. Accounts live in the app database (`control_users`, `control_sessions`), created and read by the supervisor itself (`supervisor/users.ts`), not by procs/migrate — it checks a session on every request, including while the runtime is down. Passwords are argon2id; a session is a random token in an HttpOnly, SameSite=Lax cookie (`bot_session`, Secure on HTTPS or the configured `PUBLIC_BASE_URL`), stored only as its SHA-256 and valid 30 days. Five failed sign-ins lock that login for that address for 15 minutes. Login and every other mutating request need a same-origin Origin header.
+
+The first start with no accounts creates `admin` with `CONTROL_PASSWORD` or the password in `.runtime/control/password` (generated, 0600), so an existing installation signs in as before; change it at `/_auth/password`. After that those two are not read again.
+
+Roles, enforced here: **admin** — everything, including Pi (`/_agent/*`), recovery (`/_control/*`) and accounts; **editor** — the whole bot admin, nothing under `/_agent` or `/_control`; **viewer** — the bot admin read-only (GET/HEAD only). The runtime receives the signed-in operator as `x-bot-user` (URI-encoded JSON `{id, login, name, role}`, always replaced by the supervisor) and never the session cookie; `src/$middleware.ts` puts it on `session.user`, and `team.can({ permission })` decides what the UI shows (menu cards by their `permission`, Pi only for admins).
+
+- `/_auth/login`, `/_auth/logout` (POST), `/_auth/password` (own password; signs out other sessions), `/_auth/me`.
+- `/_control/users` (admin): GET lists accounts; POST creates one; POST `/_control/users/:id/{password,role,name,disable,enable,signout}`. Form posts (the app's **Team** page, `/team`) redirect back with a notice; JSON gets JSON. The last active admin cannot be demoted or disabled. A password change or disabling ends that user's sessions.
+- Locked out: `bun run users list | add <login> <role> | passwd <login> | role | disable | enable | signout` from the app root.
+
+**Public paths** (`supervisor/public.ts`): a module opens part of itself to the outside under `/<module>/public/…` — a page a buyer opens, a provider's webhook, a bot's webhook trigger; the channel webhooks keep `/bot/webhook/…`. These need no sign-in and no Origin (a third party POSTs to them), and are anonymous by construction: no `x-bot-user` even for a signed-in admin, no session cookie, and `x-bot-access: public`, on which `session.public` makes `team.can` refuse everything and the default layout render a bare page (framework stylesheets only, no menu, Pi or scripts). The framework's static files (`/procs/ui|styles/….css|js|svg|woff2`) are readable without signing in so such a page is styled. Underscore namespaces (`/_agent`, `/_control`, `/_auth`) can never be public. A public route treats its input as hostile: verify with the provider, never trust the body.
+
+`CONTROL_AUTH=open` turns sign-in off entirely (loudly logged). Never publish credentials in a URL. Public hosting requires HTTPS. `SUPERVISOR_HOST` defaults to loopback; Compose binds inside the container and publishes only on host loopback.
+
+## Routes
 
 - `/_agent/state`, `/_agent/submit`, `/_agent/abort`: authenticated Pi API.
 - `/_agent/auth`, `/_agent/auth/login`, `/_agent/auth/respond`, `/_agent/auth/cancel`, `/_agent/auth/logout`: pi-ai provider login callbacks and credential status (never stored secrets).
 - `/_agent/model`: persist the conversation's selected provider/model.
 - `/_control/status`, `/_control/restart`: authenticated process control.
-- `/bot/webhook/*`: public POST transport to runtime.
+- `/bot/webhook/*`, `/<module>/public/*`: public, anonymous transport to runtime (see Public paths).
 - `/procs/repl`: denied by the host proxy.
 - Mutating admin/control requests require a same-origin Origin header.
 

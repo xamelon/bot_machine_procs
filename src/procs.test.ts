@@ -317,7 +317,8 @@ test("the generated types assemble ctx.state and Session from the modules", asyn
     expect(d).toContain('auth: import("../../src/procs/auth/State").State;');
     // …and one Session, the framework's base plus every module's contribution —
     // a module adds fields by shipping Session.ts, nobody overrides the type.
-    expect(d).toMatch(/type Session = import\("[^"]*Session"\)\.Session & types\.greet\.Session;/);
+    // (`team` is core's own: the signed-in operator, `session.user`.)
+    expect(d).toMatch(/type Session = import\("[^"]*Session"\)\.Session & types\.greet\.Session & types\.team\.Session;/);
 });
 
 test("the REPL is gated by a token this run signed, not by a shared secret", async () => {

@@ -1,0 +1,1 @@
+{ "title": "Team", "icon": "ph-users-three", "group": "Setup", "permission": "team.manage", "order": 30, "open": "/team" }

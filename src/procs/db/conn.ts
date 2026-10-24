@@ -12,5 +12,9 @@ export default function (ctx: Context, _session: Session | null, _opts?: {}): Da
     const url = ctx.fns.procs.db.url();
     if (url !== ":memory:" && url.includes("/")) mkdirSync(dirname(url), { recursive: true });
     st.connection = new Database(url);
+    // Another process may hold the write lock for a moment (the supervisor
+    // writes operator sessions into the same file): wait for it rather than
+    // failing the bot's own write with SQLITE_BUSY.
+    st.connection.exec("PRAGMA busy_timeout = 5000");
     return st.connection;
 }
