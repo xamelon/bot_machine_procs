@@ -26,7 +26,7 @@ export default async function (ctx: Context, session: Session, opts: { req: Requ
                 try { controller.enqueue(enc.encode(`data: ${JSON.stringify(e)}\n\n`)); }
                 catch { cleanup(); }
             };
-            send({ type: "hello", serverStart: (ctx.state as any).serverStart });
+            send({ type: "hello", serverStart: (ctx.state as any).serverStart, revision: ctx.state.procs.events?.revision ?? 0 });
             unsub = ctx.fns.procs.events.subscribe({ handler: send });
             // The stream is also the presence: it lasts exactly as long as the tab.
             leave = ctx.fns.procs.events.join({});
