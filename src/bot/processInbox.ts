@@ -49,6 +49,12 @@ async function one(ctx: Context, event: any) {
     });
     const input = JSON.parse(event.payload);
     const connectionId = event.bot_channel_connection_id;
+    // A platform event, not something the person said: no flow runs.
+    if (input.kind === "user_blocked") {
+        ctx.fns.bot.blockUser({ connectionId, externalId: String(input.external_id) });
+        markProcessed(ctx, event.id);
+        return;
+    }
     const user = upsertUser(ctx, connectionId, input);
     const session = active(ctx, connectionId, user.id);
     const forced = forcedFlow(ctx, connectionId, input);
@@ -101,9 +107,10 @@ function upsertUser(ctx: Context, connectionId: number, input: any) {
     const prev = JSON.parse(row.metadata || "{}");
     const metadata = { ...prev, ...incoming };
     const display = input.display_name || row.display_name;
-    if (display !== row.display_name || JSON.stringify(metadata) !== JSON.stringify(prev)) {
+    // They wrote again, so they can be written to: a block (bot.blockUser) is over.
+    if (display !== row.display_name || JSON.stringify(metadata) !== JSON.stringify(prev) || row.blocked_at) {
         ctx.fns.procs.db.run({
-            sql: "UPDATE bot_users SET display_name = ?, metadata = ?, updated_at = ? WHERE id = ?",
+            sql: "UPDATE bot_users SET display_name = ?, metadata = ?, blocked_at = NULL, updated_at = ? WHERE id = ?",
             params: [display, JSON.stringify(metadata), now, row.id],
         });
     }
@@ -256,11 +263,12 @@ function markProcessed(ctx: Context, id: number) {
 }
 
 function fail(ctx: Context, event: any, reason: string) {
+    // one() already counted this attempt in the row; `event` is the row as it was.
     const attempts = Number(event.attempts) + 1;
-    const at = new Date(Date.now() + Math.min(60, attempts) * 1000).toISOString();
+    const next = ctx.fns.bot.retryAt({ attempts, createdAt: event.created_at });
     ctx.fns.procs.db.run({
-        sql: "UPDATE bot_inbox_events SET status = 'failed', attempts = ?, last_error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?",
-        params: [attempts, reason, at, new Date().toISOString(), event.id],
+        sql: "UPDATE bot_inbox_events SET status = ?, attempts = ?, last_error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?",
+        params: [next.dead ? "dead" : "failed", attempts, reason, next.at, new Date().toISOString(), event.id],
     });
 }
 

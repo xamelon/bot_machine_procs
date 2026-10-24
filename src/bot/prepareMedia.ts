@@ -22,10 +22,12 @@ async function prepare(ctx: Context, connection: any, payload: any, photo: any) 
         put(ctx, connection.id, photo.url, uploaded.ref);
         return { ...photo, ref: uploaded.ref };
     }
+    // Telegram has no upload-only call: the first sendPhoto carries the file itself,
+    // its reply gives a file_id, and sendOutbox caches that via rememberMedia.
     if (connection.channel === "telegram") {
-        const base = ctx.fns.procs.config.resolve({ module: "bot" }).publicBaseUrl.replace(/\/$/, "");
-        if (!base) throw new Error("PUBLIC_BASE_URL is required for media delivery");
-        return { ...photo, url: base + photo.url };
+        const path = disk(ctx, photo.url);
+        if (!(await Bun.file(path).exists())) throw new Error(`media file not found: ${photo.url}`);
+        return { ...photo, path };
     }
     return photo;
 }

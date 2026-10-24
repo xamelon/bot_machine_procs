@@ -134,7 +134,10 @@ async function vk(ctx: Context, token: string, method: string, params: Record<st
         body: new URLSearchParams(params),
     } });
     const json: any = await res.json().catch(() => ({}));
-    if (!res.ok || json.error) return { ok: false, error: json.error?.error_msg || `VK HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? 60, rateLimited: pause !== undefined };
+    // https://dev.vk.com/method/messages.send — 900 blacklisted, 901 messages from the
+    // community not allowed, 902 privacy settings: the person cannot be written to.
+    const unreachable = [900, 901, 902].includes(json.error?.error_code);
+    if (!res.ok || json.error) return { ok: false, error: json.error?.error_msg || `VK HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? 60, rateLimited: pause !== undefined, unreachable };
     return json;
 }
 

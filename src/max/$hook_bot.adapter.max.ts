@@ -75,6 +75,17 @@ function parse(req: Request | undefined, body: any, connection: any) {
         };
     }
 
+    // https://dev.max.ru/docs-api/objects/Update — stopped or deleted the bot.
+    // bot_started (above) is the way back: it arrives as /start and unblocks.
+    if (body?.update_type === "bot_stopped") {
+        const chat = body.chat_id;
+        if (!chat) return ignored();
+        return {
+            idempotencyKey: `max:${body.timestamp ?? ""}:stopped:${chat}`,
+            input: { kind: "user_blocked", channel: "max", external_id: String(chat) },
+        };
+    }
+
     return ignored();
 }
 
@@ -98,7 +109,9 @@ async function send(ctx: Context, connection: any, payload: any, attempts = 0) {
     const json: any = await res.json().catch(() => ({}));
     if (res.ok) return { ok: true, externalMessageId: String(json.message?.body?.mid ?? json.message?.body?.message_id ?? Date.now()) };
     const retryAfter = json.code === "attachment.not.ready" ? Math.min(60, 5 * 2 ** Math.min(attempts, 4)) : 60;
-    return { ok: false, error: `MAX HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? retryAfter, rateLimited: pause !== undefined };
+    // MAX does not document a "bot stopped" send error; it sends `bot_stopped` instead
+    // (parse). 403 is the one send answer that also means "not allowed to write here".
+    return { ok: false, error: `MAX HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter: pause ?? retryAfter, rateLimited: pause !== undefined, unreachable: res.status === 403 };
 }
 
 async function uploadPhoto(ctx: Context, connection: any, path: string) {

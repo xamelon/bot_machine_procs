@@ -6,7 +6,7 @@ export default function (ctx: Context, session: Session | null) {
     }) : [];
     const table = ctx.fns.procs.ui.table({
         entity: "user", rowHref: (row) => `/bot/users/${row.id}`,
-        columns: [{ key: "display_name", label: "Name" }, { key: "channel", label: "Channel" }, { key: "external_id", label: "External id" }, { key: "created_at", label: "Created" }],
+        columns: [{ key: "display_name", label: "Name" }, { key: "channel", label: "Channel", render: (row) => ctx.fns.procs.ui.platform({ platform: row.channel }) }, { key: "external_id", label: "External id" }, { key: "created_at", label: "Created", render: (row) => ctx.fns.bot.date({ value: row.created_at }) }],
         rows, empty: "No users",
     });
     return ctx.fns.bot.screen({

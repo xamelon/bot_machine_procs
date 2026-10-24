@@ -1239,3 +1239,31 @@ a.asx-item:hover { background: var(--color-asx-overlay-hover); }
 .asx-dropdown-menu__subpanel { position: absolute; left: calc(100% + var(--asx-space-1)); top: 0; display: none; min-width: 180px; gap: var(--asx-space-0-5); padding: var(--asx-space-1); border: var(--asx-border-width) solid var(--color-asx-border); border-radius: var(--asx-radius-container); background: var(--color-asx-background-popover); box-shadow: var(--asx-shadow-med); }
 .asx-dropdown-menu__submenu:hover > .asx-dropdown-menu__subpanel, .asx-dropdown-menu__submenu:focus-within > .asx-dropdown-menu__subpanel { display: grid; }
 .asx-dropdown-menu__item[role="menuitemcheckbox"][aria-checked="true"], .asx-dropdown-menu__item[role="menuitemradio"][aria-checked="true"] { background: var(--color-asx-accent-muted); }
+
+/* procs.ui.platform — messenger pill: brand logo + TG / VK / MAX. The logo is a mask
+   over a brand-coloured box, so MAX keeps its gradient without SVG ids.
+   Telegram, VK: Simple Icons (CC0). MAX: Wikimedia Commons "Max (app) logo.svg". */
+.asx-platform {
+  display: inline-flex; align-items: center; gap: 5px; vertical-align: middle;
+  height: var(--asx-space-5); padding: 0 var(--asx-space-2) 0 3px;
+  border-radius: var(--asx-radius-full); background: var(--color-asx-neutral);
+  color: var(--color-asx-text-primary); white-space: nowrap;
+  font-size: var(--asx-text-supporting-size); line-height: var(--asx-text-supporting-leading);
+  font-weight: var(--asx-font-weight-semibold); letter-spacing: .02em;
+}
+.asx-platform[data-size="sm"] { height: 18px; gap: 4px; font-size: 11px; }
+.asx-platform > .ph { font-size: 14px; color: var(--color-asx-text-secondary); margin-left: 1px; }
+.asx-platform[data-platform="other"] { padding-left: var(--asx-space-1); }
+.asx-platform__logo {
+  flex: none; width: 14px; height: 14px; background: var(--_platform-brand);
+  -webkit-mask: var(--_platform-logo) center / contain no-repeat; mask: var(--_platform-logo) center / contain no-repeat;
+}
+.asx-platform[data-size="sm"] .asx-platform__logo { width: 12px; height: 12px; }
+.asx-platform[data-platform="telegram"] { --_platform-brand: #26A5E4; --_platform-logo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'/%3E%3C/svg%3E"); }
+.asx-platform[data-platform="vk"] { --_platform-brand: #0077FF; --_platform-logo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='m9.489.004.729-.003h3.564l.73.003.914.01.433.007.418.011.403.014.388.016.374.021.36.025.345.03.333.033c1.74.196 2.933.616 3.833 1.516.9.9 1.32 2.092 1.516 3.833l.034.333.029.346.025.36.02.373.025.588.012.41.013.644.009.915.004.98-.001 3.313-.003.73-.01.914-.007.433-.011.418-.014.403-.016.388-.021.374-.025.36-.03.345-.033.333c-.196 1.74-.616 2.933-1.516 3.833-.9.9-2.092 1.32-3.833 1.516l-.333.034-.346.029-.36.025-.373.02-.588.025-.41.012-.644.013-.915.009-.98.004-3.313-.001-.73-.003-.914-.01-.433-.007-.418-.011-.403-.014-.388-.016-.374-.021-.36-.025-.345-.03-.333-.033c-1.74-.196-2.933-.616-3.833-1.516-.9-.9-1.32-2.092-1.516-3.833l-.034-.333-.029-.346-.025-.36-.02-.373-.025-.588-.012-.41-.013-.644-.009-.915-.004-.98.001-3.313.003-.73.01-.914.007-.433.011-.418.014-.403.016-.388.021-.374.025-.36.03-.345.033-.333c.196-1.74.616-2.933 1.516-3.833.9-.9 2.092-1.32 3.833-1.516l.333-.034.346-.029.36-.025.373-.02.588-.025.41-.012.644-.013.915-.009ZM6.79 7.3H4.05c.13 6.24 3.25 9.99 8.72 9.99h.31v-3.57c2.01.2 3.53 1.67 4.14 3.57h2.84c-.78-2.84-2.83-4.41-4.11-5.01 1.28-.74 3.08-2.54 3.51-4.98h-2.58c-.56 1.98-2.22 3.78-3.8 3.95V7.3H10.5v6.92c-1.6-.4-3.62-2.34-3.71-6.92Z'/%3E%3C/svg%3E"); }
+.asx-platform[data-platform="max"] { --_platform-brand: linear-gradient(45deg, #1BBCFF, #3C22FE 55%, #8419FF); --_platform-logo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'%3E%3Cpath fill-rule='evenodd' d='M21.47 41.88c-4.11 0-6.02-.6-9.34-3-2.1 2.7-8.75 4.81-9.04 1.2 0-2.71-.6-5-1.28-7.5C1 29.5.08 26.07.08 21.1.08 9.23 9.82.3 21.36.3c11.55 0 20.6 9.37 20.6 20.91a20.6 20.6 0 0 1-20.49 20.67m.17-31.32c-5.62-.29-10 3.6-10.97 9.7-.8 5.05.62 11.2 1.83 11.52.58.14 2.04-1.04 2.95-1.95a10.4 10.4 0 0 0 5.08 1.81 10.7 10.7 0 0 0 11.19-9.97 10.7 10.7 0 0 0-10.08-11.1Z'/%3E%3C/svg%3E"); }
+
+/* bot.date — a moment with its exact value on hover. */
+.asx-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+time.asx-date { cursor: default; }
+.asx-date[data-empty] { color: var(--color-asx-text-secondary); }

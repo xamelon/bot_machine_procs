@@ -11,7 +11,7 @@ export default function (ctx: Context, _session: Session | null) {
         params: filters.applied.params,
     }) : [];
     return ctx.fns.bot.screen({ page: "bot-inbox", title: "Inbox", lead: "Incoming events waiting on the runtime.", main: `${filters.error ? ctx.fns.procs.ui.banner({ tone: "error", body: filters.error }) : ""}${filters.bar}${ctx.fns.procs.ui.card({ body: ctx.fns.procs.ui.table({
-        columns: [{ key: "id", label: "Id" }, { key: "channel", label: "Channel" }, { key: "external_id", label: "User" }, { key: "status", label: "Status" }, { key: "attempts", label: "Attempts" }, { key: "last_error", label: "Error", wrap: true }],
+        columns: [{ key: "id", label: "Id" }, { key: "channel", label: "Channel", render: (row) => ctx.fns.procs.ui.platform({ platform: row.channel }) }, { key: "external_id", label: "User" }, { key: "status", label: "Status" }, { key: "attempts", label: "Attempts" }, { key: "last_error", label: "Error", wrap: true }],
         rows,
         empty: "Inbox is empty",
         expandLabel: "Show raw payload",

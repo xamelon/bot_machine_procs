@@ -29,7 +29,7 @@ export default function (ctx: Context, session: Session | null, _opts: {}) {
     const table = ui.table({ columns: [
         { key: "name", label: "Name" },
         { key: "flow", label: "Flow" },
-        { key: "channel", label: "Channel", render: (row) => row.channel === "*" ? "Any" : esc(row.channel) },
+        { key: "channel", label: "Channel", render: (row) => row.channel === "*" ? "Any" : ui.platform({ platform: row.channel }) },
         { key: "type", label: "When", render: (row) => `${esc(typeLabel[row.type] ?? row.type)} ${matchLabel(row)}` },
         { key: "start_node_id", label: "Start", render: (row) => `<code>${esc(row.start_node_id)}</code>` },
         { key: "enabled", label: "State", render: (row) => ui.badge({ label: row.enabled ? "on" : "off", variant: row.enabled ? "success" : "neutral" }) },

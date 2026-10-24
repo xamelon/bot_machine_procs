@@ -16,7 +16,9 @@ test("editor upload is served from /uploads/bot and reused as a channel ref", as
     expect(prepared.attachments[0].ref).toBe("file-cached");
 
     ctx.fns.procs.db.run({ sql: "DELETE FROM bot_media_uploads" });
-    const absolute = await ctx.fns.bot.prepareMedia({ connection, payload: { external_id: "1", attachments: [{ type: "photo", url: saved.url }] } });
-    expect(absolute.attachments[0].url).toBe(`https://bot.example${saved.url}`);
+    // Not cached yet: Telegram gets the file from disk, no public URL involved.
+    const local = await ctx.fns.bot.prepareMedia({ connection, payload: { external_id: "1", attachments: [{ type: "photo", url: saved.url }] } });
+    expect(local.attachments[0]).toMatchObject({ url: saved.url, path: `${ctx.fns.procs.project.runtimeDir({})}${saved.url}` });
+    await expect(ctx.fns.bot.prepareMedia({ connection, payload: { attachments: [{ type: "photo", url: "/uploads/bot/missing.png" }] } })).rejects.toThrow("media file not found");
     await expect(ctx.fns.bot.saveMedia({ file: new File(["x"], "a.txt", { type: "text/plain" }) })).rejects.toThrow("only JPEG");
 });

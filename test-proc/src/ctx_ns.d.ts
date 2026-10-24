@@ -8,11 +8,13 @@ declare global {
     interface FnsRegistry {
         bot: {
             ack: Injected<typeof import("../../src/bot/ack").default>;
+            blockUser: Injected<typeof import("../../src/bot/blockUser").default>;
             broadcastPage: Injected<typeof import("../../src/bot/broadcastPage").default>;
             broadcasts: Injected<typeof import("../../src/bot/broadcasts").default>;
             channelFlows: Injected<typeof import("../../src/bot/channelFlows").default>;
             channelStatus: Injected<typeof import("../../src/bot/channelStatus").default>;
             createBroadcast: Injected<typeof import("../../src/bot/createBroadcast").default>;
+            date: Injected<typeof import("../../src/bot/date").default>;
             editorPage: Injected<typeof import("../../src/bot/editorPage").default>;
             enter: Injected<typeof import("../../src/bot/enter").default>;
             failOutbox: Injected<typeof import("../../src/bot/failOutbox").default>;
@@ -21,6 +23,7 @@ declare global {
             filterCatalog: Injected<typeof import("../../src/bot/filterCatalog").default>;
             flowChannels: Injected<typeof import("../../src/bot/flowChannels").default>;
             form: Injected<typeof import("../../src/bot/form").default>;
+            formatDate: Injected<typeof import("../../src/bot/formatDate").default>;
             formatMessage: Injected<typeof import("../../src/bot/formatMessage").default>;
             get: Injected<typeof import("../../src/bot/get").default>;
             ingest: Injected<typeof import("../../src/bot/ingest").default>;
@@ -37,6 +40,7 @@ declare global {
             receive: Injected<typeof import("../../src/bot/receive").default>;
             rememberMedia: Injected<typeof import("../../src/bot/rememberMedia").default>;
             render: Injected<typeof import("../../src/bot/render").default>;
+            retryAt: Injected<typeof import("../../src/bot/retryAt").default>;
             run: Injected<typeof import("../../src/bot/run").default>;
             save: Injected<typeof import("../../src/bot/save").default>;
             saveConnection: Injected<typeof import("../../src/bot/saveConnection").default>;
@@ -294,6 +298,7 @@ declare global {
                 overflowList: Injected<typeof import("../../src/procs/ui/overflowList").default>;
                 page: Injected<typeof import("../../src/procs/ui/page").default>;
                 pagination: Injected<typeof import("../../src/procs/ui/pagination").default>;
+                platform: Injected<typeof import("../../src/procs/ui/platform").default>;
                 popover: Injected<typeof import("../../src/procs/ui/popover").default>;
                 powerSearch: Injected<typeof import("../../src/procs/ui/powerSearch").default>;
                 progressBar: Injected<typeof import("../../src/procs/ui/progressBar").default>;
@@ -333,6 +338,25 @@ declare global {
                 vStack: Injected<typeof import("../../src/procs/ui/vStack").default>;
                 visuallyHidden: Injected<typeof import("../../src/procs/ui/visuallyHidden").default>;
             };
+        };
+        repo: {
+            act: Injected<typeof import("../../src/repo/act").default>;
+            commit: Injected<typeof import("../../src/repo/commit").default>;
+            connect: Injected<typeof import("../../src/repo/connect").default>;
+            explain: Injected<typeof import("../../src/repo/explain").default>;
+            git: Injected<typeof import("../../src/repo/git").default>;
+            github: Injected<typeof import("../../src/repo/github").default>;
+            githubCall: Injected<typeof import("../../src/repo/githubCall").default>;
+            githubLink: Injected<typeof import("../../src/repo/githubLink").default>;
+            githubRepos: Injected<typeof import("../../src/repo/githubRepos").default>;
+            keyPath: Injected<typeof import("../../src/repo/keyPath").default>;
+            push: Injected<typeof import("../../src/repo/push").default>;
+            root: Injected<typeof import("../../src/repo/root").default>;
+            signIn: Injected<typeof import("../../src/repo/signIn").default>;
+            signInCheck: Injected<typeof import("../../src/repo/signInCheck").default>;
+            signInState: Injected<typeof import("../../src/repo/signInState").default>;
+            status: Injected<typeof import("../../src/repo/status").default>;
+            submodules: Injected<typeof import("../../src/repo/submodules").default>;
         };
         team: {
             can: Injected<typeof import("../../src/team/can").default>;
@@ -418,6 +442,9 @@ declare global {
                 type SemanticAttr = import("../../src/procs/ui/SemanticAttr").SemanticAttr;
             }
         }
+        namespace repo {
+            type State = import("../../src/repo/State").State;
+        }
         namespace team {
             type Session = import("../../src/team/Session").Session;
         }
@@ -445,6 +472,7 @@ declare global {
             repl: import("../../src/procs/repl/State").State;
             styles: import("../../src/procs/styles/State").State;
         };
+        repo: import("../../src/repo/State").State;
     }
 
     type Session = import("../../src/Session").Session & types.greet.Session & types.team.Session;

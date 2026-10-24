@@ -16,7 +16,13 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
                 const payload = connection ? await ctx.fns.bot.prepareMedia({ connection, payload: message.payload }) : message.payload;
                 const result = await ctx.fns.procs.hooks.first({ name: `bot.adapter.${message.channel}`, opts: { phase: "send", message: { ...message, payload }, connection } });
                 if (!result) { skipped++; ctx.fns.bot.failOutbox({ id: message.id, error: `unknown channel ${message.channel}`, retryAfter: 60 }); continue; }
-                if (result.ok === false) { failed++; ctx.fns.bot.failOutbox({ id: message.id, error: String(result.error ?? "send failed"), retryAfter: result.retryAfter }); continue; }
+                if (result.ok === false) {
+                    failed++;
+                    // `unreachable`: the person blocked the bot or cannot be written to — no retry.
+                    if (result.unreachable && connection) ctx.fns.bot.blockUser({ connectionId: connection.id, externalId: message.external_id });
+                    ctx.fns.bot.failOutbox({ id: message.id, error: String(result.error ?? "send failed"), retryAfter: result.retryAfter, final: !!result.unreachable });
+                    continue;
+                }
                 if (connection && result.fileIds) ctx.fns.bot.rememberMedia({ connectionId: connection.id, payload: message.payload, refs: result.fileIds });
                 ctx.fns.bot.ack({ id: message.id, externalMessageId: result.externalMessageId });
                 sent++;

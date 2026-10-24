@@ -45,6 +45,7 @@ export default function (ctx: Context) {
         <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "success", label: "healthy" })} Healthy</span>
         <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "warning", label: "delayed" })} Delayed</span>
         <span class="inline-flex items-center gap-2">${ctx.fns.procs.ui.statusDot({ tone: "error", label: "down" })} Down</span>
+        <span class="inline-flex items-center gap-2">${["telegram", "vk", "max", "echo"].map(platform => ctx.fns.procs.ui.platform({ platform })).join("")}${ctx.fns.procs.ui.platform({ platform: "tg", size: "sm" })}</span>
     </div>`;
     const empty = ctx.fns.procs.ui.emptyState({ title: "No broadcasts yet", body: "Create your first campaign when you are ready.", icon: "ph-paper-plane-tilt", action: ctx.fns.procs.ui.button({ label: "New broadcast", variant: "primary" }) });
     const command = ctx.fns.procs.ui.commandMenu({ label: "Open command menu", items: [

@@ -8,11 +8,13 @@ declare global {
     interface FnsRegistry {
         bot: {
             ack: Injected<typeof import("./bot/ack").default>;
+            blockUser: Injected<typeof import("./bot/blockUser").default>;
             broadcastPage: Injected<typeof import("./bot/broadcastPage").default>;
             broadcasts: Injected<typeof import("./bot/broadcasts").default>;
             channelFlows: Injected<typeof import("./bot/channelFlows").default>;
             channelStatus: Injected<typeof import("./bot/channelStatus").default>;
             createBroadcast: Injected<typeof import("./bot/createBroadcast").default>;
+            date: Injected<typeof import("./bot/date").default>;
             editorPage: Injected<typeof import("./bot/editorPage").default>;
             enter: Injected<typeof import("./bot/enter").default>;
             failOutbox: Injected<typeof import("./bot/failOutbox").default>;
@@ -21,6 +23,7 @@ declare global {
             filterCatalog: Injected<typeof import("./bot/filterCatalog").default>;
             flowChannels: Injected<typeof import("./bot/flowChannels").default>;
             form: Injected<typeof import("./bot/form").default>;
+            formatDate: Injected<typeof import("./bot/formatDate").default>;
             formatMessage: Injected<typeof import("./bot/formatMessage").default>;
             get: Injected<typeof import("./bot/get").default>;
             ingest: Injected<typeof import("./bot/ingest").default>;
@@ -37,6 +40,7 @@ declare global {
             receive: Injected<typeof import("./bot/receive").default>;
             rememberMedia: Injected<typeof import("./bot/rememberMedia").default>;
             render: Injected<typeof import("./bot/render").default>;
+            retryAt: Injected<typeof import("./bot/retryAt").default>;
             run: Injected<typeof import("./bot/run").default>;
             save: Injected<typeof import("./bot/save").default>;
             saveConnection: Injected<typeof import("./bot/saveConnection").default>;
@@ -273,6 +277,7 @@ declare global {
                 overflowList: Injected<typeof import("./procs/ui/overflowList").default>;
                 page: Injected<typeof import("./procs/ui/page").default>;
                 pagination: Injected<typeof import("./procs/ui/pagination").default>;
+                platform: Injected<typeof import("./procs/ui/platform").default>;
                 popover: Injected<typeof import("./procs/ui/popover").default>;
                 powerSearch: Injected<typeof import("./procs/ui/powerSearch").default>;
                 progressBar: Injected<typeof import("./procs/ui/progressBar").default>;

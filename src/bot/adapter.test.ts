@@ -73,6 +73,42 @@ test("telegram provision stores getMe and webhook", async () => {
     expect(JSON.parse(row.config).webhook_url).toBe("https://bot.example/bot/webhook/telegram/tg1");
 });
 
+test("telegram uploads a local photo as a file once, then sends the cached file_id", async () => {
+    const saved = ctx.fns.bot.saveConnection({ channel: "telegram", name: "TG media", publicId: "tg-media", credentials: { bot_token: "t" } });
+    const media = await ctx.fns.bot.saveMedia({ file: new File([Uint8Array.from([137, 80, 78, 71])], "a.png", { type: "image/png" }) });
+    const sends: any[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: any, init: any) => {
+        expect(String(url)).toBe("https://api.telegram.org/bott/sendPhoto");
+        sends.push(init.body);
+        return new Response(JSON.stringify({ ok: true, result: { message_id: sends.length, photo: [{ file_id: "small" }, { file_id: "tg-file-1" }] } }));
+    }) as any;
+    // Different chats: Telegram paces one recipient to a message per second.
+    const queue = (key: string, chat: string) => ctx.fns.procs.db.insert({ into: "bot_outbox_messages", values: {
+        bot_channel_connection_id: saved.id, channel: "telegram", external_id: chat, idempotency_key: key, status: "pending", attempts: 0,
+        payload: JSON.stringify({ channel: "telegram", external_id: chat, text: "**menu** & <co>", buttons: [{ label: "Go", payload: "go" }], attachments: [{ type: "photo", url: media.url }] }),
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    } });
+    try {
+        ctx.fns.procs.db.run({ sql: "DELETE FROM bot_outbox_messages" });
+        queue("tg-photo-1", "42");
+        expect(await ctx.fns.bot.sendOutbox({})).toMatchObject({ sent: 1, failed: 0 });
+        queue("tg-photo-2", "43");
+        expect(await ctx.fns.bot.sendOutbox({})).toMatchObject({ sent: 1, failed: 0 });
+    } finally { globalThis.fetch = original; }
+
+    expect(sends[0]).toBeInstanceOf(FormData);
+    const file = sends[0].get("photo");
+    expect(file).toBeInstanceOf(Blob);
+    expect([...new Uint8Array(await file.arrayBuffer())]).toEqual([137, 80, 78, 71]);
+    expect(sends[0].get("chat_id")).toBe("42");
+    expect(sends[0].get("caption")).toBe("<b>menu</b> &amp; &lt;co&gt;");
+    expect(sends[0].get("parse_mode")).toBe("HTML");
+    expect(JSON.parse(sends[0].get("reply_markup")).inline_keyboard[0][0].text).toBe("Go");
+    expect(ctx.fns.procs.db.select({ sql: "SELECT remote_ref FROM bot_media_uploads WHERE bot_channel_connection_id = ? AND media_key = ?", params: [saved.id, media.url] })[0]?.remote_ref).toBe("tg-file-1");
+    expect(JSON.parse(sends[1])).toMatchObject({ chat_id: "43", photo: "tg-file-1", caption: "<b>menu</b> &amp; &lt;co&gt;", parse_mode: "HTML" });
+});
+
 test("vk send uploads a photo url before messages.send", async () => {
     const saved = ctx.fns.bot.saveConnection({ channel: "vk", name: "VK send", publicId: "vk-send", credentials: { group_access_token: "v" } });
     const calls: string[] = [];

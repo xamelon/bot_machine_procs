@@ -48,35 +48,45 @@ async function send(ctx: Context, connection: any, payload: any) {
     const token = connection?.credentials?.bot_token;
     if (!token) return { ok: false, error: "Telegram credentials are not configured", retryAfter: 60 };
     const attachments = (payload.attachments ?? []).filter((a: any) => a?.type === "photo");
-    const photo = attachments.find((a: any) => a.ref || a.url);
+    const photo = attachments.find((a: any) => a.ref || a.path || a.url);
+    const formatted = ctx.fns.bot.formatMessage({ channel: "telegram", text: payload.text, format: payload.format });
     if (photo) {
-        return post(ctx, token, "sendPhoto", {
-            chat_id: payload.external_id,
-            photo: photo.ref || photo.url,
-            caption: payload.text || "",
-            reply_markup: keyboard(payload),
-        }, String(payload.external_id));
+        const fields = { chat_id: payload.external_id, caption: formatted.text, parse_mode: formatted.parseMode, reply_markup: keyboard(payload) };
+        // A local upload without a cached file_id goes as the file itself (multipart).
+        if (!photo.ref && photo.path) return upload(ctx, token, "sendPhoto", fields, photo.path, String(payload.external_id));
+        return post(ctx, token, "sendPhoto", { ...fields, photo: photo.ref || photo.url }, String(payload.external_id));
     }
     return post(ctx, token, "sendMessage", {
         chat_id: payload.external_id,
-        text: payload.text || "",
+        text: formatted.text,
+        parse_mode: formatted.parseMode,
         reply_markup: keyboard(payload),
     }, String(payload.external_id));
 }
 
 async function post(ctx: Context, token: string, method: string, body: any, recipient?: string) {
-    const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'telegram', url: `${API}/bot${token}/${method}`, recipient, init: {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(strip(body)),
-    } });
+    return call(ctx, token, method, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(strip(body)) }, recipient);
+}
+
+async function upload(ctx: Context, token: string, method: string, fields: any, path: string, recipient?: string) {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(strip(fields))) form.append(key, typeof value === "string" ? value : JSON.stringify(value));
+    form.append("photo", Bun.file(path), path.split("/").pop());
+    return call(ctx, token, method, { method: "POST", body: form }, recipient);
+}
+
+async function call(ctx: Context, token: string, method: string, init: BunFetchRequestInit, recipient?: string) {
+    const { response: res, retryAfter: pause } = await ctx.fns.bot.platformFetch({ channel: 'telegram', url: `${API}/bot${token}/${method}`, recipient, init });
     const json: any = await res.json().catch(() => ({}));
     if (res.ok && json.ok) {
         const photo = Array.isArray(json.result?.photo) ? json.result.photo.at(-1)?.file_id : undefined;
         return { ok: true, externalMessageId: String(json.result?.message_id ?? Date.now()), fileIds: photo ? [photo] : undefined };
     }
     const retryAfter = pause ?? json.parameters?.retry_after ?? json.retry_after;
-    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter, rateLimited: pause !== undefined };
+    // 403: blocked by the user, user deactivated, kicked from the chat, can't initiate
+    // a conversation; 400 "chat not found" — nobody to deliver to, retrying won't help.
+    const unreachable = res.status === 403 || (res.status === 400 && /chat not found/i.test(String(json.description ?? "")));
+    return { ok: false, error: `Telegram HTTP ${res.status}: ${JSON.stringify(json)}`, retryAfter, rateLimited: pause !== undefined, unreachable };
 }
 
 async function provision(ctx: Context, connection: any) {
