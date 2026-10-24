@@ -318,6 +318,19 @@ declare global {
             diff: Injected<typeof import("../modules/screen/src/screen/diff").default>;
             eval: Injected<typeof import("../modules/screen/src/screen/eval").default>;
             fill: Injected<typeof import("../modules/screen/src/screen/fill").default>;
+        repo: {
+            act: Injected<typeof import("./repo/act").default>;
+            commit: Injected<typeof import("./repo/commit").default>;
+            connect: Injected<typeof import("./repo/connect").default>;
+            explain: Injected<typeof import("./repo/explain").default>;
+            git: Injected<typeof import("./repo/git").default>;
+            github: Injected<typeof import("./repo/github").default>;
+            keyPath: Injected<typeof import("./repo/keyPath").default>;
+            push: Injected<typeof import("./repo/push").default>;
+            root: Injected<typeof import("./repo/root").default>;
+            status: Injected<typeof import("./repo/status").default>;
+            submodules: Injected<typeof import("./repo/submodules").default>;
+        };
             liveTabs: Injected<typeof import("../modules/screen/src/screen/liveTabs").default>;
             open: Injected<typeof import("../modules/screen/src/screen/open").default>;
             openTab: Injected<typeof import("../modules/screen/src/screen/openTab").default>;
@@ -413,6 +426,9 @@ declare global {
             type Descriptor = import("../modules/screen/src/screen/Descriptor").Descriptor;
             type Marker = import("../modules/screen/src/screen/Marker").Marker;
             type OpenAction = import("../modules/screen/src/screen/OpenAction").OpenAction;
+        namespace repo {
+            type State = import("./repo/State").State;
+        }
             type ScreenSnapshot = import("../modules/screen/src/screen/ScreenSnapshot").ScreenSnapshot;
             type State = import("../modules/screen/src/screen/State").State;
         }
@@ -449,4 +465,5 @@ declare global {
 
     type Session = import("./Session").Session & types.team.Session;
 }
+        repo: import("./repo/State").State;
 export {};

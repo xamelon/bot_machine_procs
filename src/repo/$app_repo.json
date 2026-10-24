@@ -1,0 +1,1 @@
+{ "title": "Repository", "icon": "ph-git-branch", "group": "Setup", "permission": "repo.manage", "order": 40, "open": "/repo" }
