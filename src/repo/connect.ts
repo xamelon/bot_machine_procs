@@ -1,4 +1,4 @@
-import { mkdir, chmod } from "node:fs/promises";
+import { mkdir, chmod, rm } from "node:fs/promises";
 import { dirname } from "node:path";
 
 // GitHub's published host keys (api.github.com/meta, `ssh_keys`). Pinned rather
@@ -13,6 +13,9 @@ const GITHUB_HOST_KEYS = [
 // repository's ssh URL and set `core.sshCommand` in the checkout's own config to
 // that key and the pinned host keys. From then on a plain `git push` from the
 // checkout — this page, the agent's repl, a terminal — authenticates as the key.
+//
+// GitHub accepts a deploy key on one repository only, so moving to another
+// repository makes a new key; reconnecting the same one keeps it.
 export default async function (ctx: Context, _session: Session | null, opts: { url: string }) {
     const repo = ctx.fns.repo.github({ url: opts.url });
     if (!repo) throw new Error("Not a GitHub repository. Use owner/repo or git@github.com:owner/repo.git");
@@ -21,6 +24,11 @@ export default async function (ctx: Context, _session: Session | null, opts: { u
     const dir = dirname(key);
     await mkdir(dir, { recursive: true, mode: 0o700 });
     await chmod(dir, 0o700);
+    const current = ctx.fns.repo.github({ url: (await git({ args: ["remote", "get-url", "origin"] })).out.trim() });
+    if (current && current.ssh.toLowerCase() !== repo.ssh.toLowerCase()) {
+        await rm(key, { force: true });
+        await rm(`${key}.pub`, { force: true });
+    }
     if (!(await Bun.file(key).exists())) {
         const name = ctx.fns.repo.root({}).split("/").pop() || "bot";
         const made = Bun.spawnSync(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", `${name} deploy key`, "-f", key], { stdin: "ignore", stdout: "pipe", stderr: "pipe" });

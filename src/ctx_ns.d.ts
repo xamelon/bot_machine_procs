@@ -313,11 +313,6 @@ declare global {
                 visuallyHidden: Injected<typeof import("./procs/ui/visuallyHidden").default>;
             };
         };
-        screen: {
-            click: Injected<typeof import("../modules/screen/src/screen/click").default>;
-            diff: Injected<typeof import("../modules/screen/src/screen/diff").default>;
-            eval: Injected<typeof import("../modules/screen/src/screen/eval").default>;
-            fill: Injected<typeof import("../modules/screen/src/screen/fill").default>;
         repo: {
             act: Injected<typeof import("./repo/act").default>;
             commit: Injected<typeof import("./repo/commit").default>;
@@ -325,12 +320,23 @@ declare global {
             explain: Injected<typeof import("./repo/explain").default>;
             git: Injected<typeof import("./repo/git").default>;
             github: Injected<typeof import("./repo/github").default>;
+            githubCall: Injected<typeof import("./repo/githubCall").default>;
+            githubLink: Injected<typeof import("./repo/githubLink").default>;
+            githubRepos: Injected<typeof import("./repo/githubRepos").default>;
             keyPath: Injected<typeof import("./repo/keyPath").default>;
             push: Injected<typeof import("./repo/push").default>;
             root: Injected<typeof import("./repo/root").default>;
+            signIn: Injected<typeof import("./repo/signIn").default>;
+            signInCheck: Injected<typeof import("./repo/signInCheck").default>;
+            signInState: Injected<typeof import("./repo/signInState").default>;
             status: Injected<typeof import("./repo/status").default>;
             submodules: Injected<typeof import("./repo/submodules").default>;
         };
+        screen: {
+            click: Injected<typeof import("../modules/screen/src/screen/click").default>;
+            diff: Injected<typeof import("../modules/screen/src/screen/diff").default>;
+            eval: Injected<typeof import("../modules/screen/src/screen/eval").default>;
+            fill: Injected<typeof import("../modules/screen/src/screen/fill").default>;
             liveTabs: Injected<typeof import("../modules/screen/src/screen/liveTabs").default>;
             open: Injected<typeof import("../modules/screen/src/screen/open").default>;
             openTab: Injected<typeof import("../modules/screen/src/screen/openTab").default>;
@@ -421,14 +427,14 @@ declare global {
                 type SemanticAttr = import("./procs/ui/SemanticAttr").SemanticAttr;
             }
         }
+        namespace repo {
+            type State = import("./repo/State").State;
+        }
         namespace screen {
             type Catalogue = import("../modules/screen/src/screen/Catalogue").Catalogue;
             type Descriptor = import("../modules/screen/src/screen/Descriptor").Descriptor;
             type Marker = import("../modules/screen/src/screen/Marker").Marker;
             type OpenAction = import("../modules/screen/src/screen/OpenAction").OpenAction;
-        namespace repo {
-            type State = import("./repo/State").State;
-        }
             type ScreenSnapshot = import("../modules/screen/src/screen/ScreenSnapshot").ScreenSnapshot;
             type State = import("../modules/screen/src/screen/State").State;
         }
@@ -460,10 +466,10 @@ declare global {
             repl: import("./procs/repl/State").State;
             styles: import("./procs/styles/State").State;
         };
+        repo: import("./repo/State").State;
         screen: import("../modules/screen/src/screen/State").State;
     }
 
     type Session = import("./Session").Session & types.team.Session;
 }
-        repo: import("./repo/State").State;
 export {};
