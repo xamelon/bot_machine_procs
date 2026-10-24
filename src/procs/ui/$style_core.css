@@ -917,7 +917,8 @@
 .asx-stack[data-justify="center"] { justify-content: center; }
 .asx-stack[data-justify="end"] { justify-content: flex-end; }
 .asx-stack[data-justify="between"] { justify-content: space-between; }
-.asx-grid { display: grid; min-width: 0; }
+.asx-grid { display: grid; min-width: 0; grid-template-columns: var(--asx-grid-columns); }
+@media (max-width: 720px) { .asx-grid[data-stack] { grid-template-columns: minmax(0, 1fr); } }
 .asx-center { display: grid; place-items: center; }
 .asx-form-layout { display: grid; gap: var(--asx-space-4); }
 .asx-form-layout[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }

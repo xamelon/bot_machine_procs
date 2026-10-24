@@ -6,7 +6,8 @@ import { testCtx } from '../$test';
 test('chat collapse keeps the conversation and composer, restores focus and persists width/state', async () => {
     const ctx = await testCtx({ root: resolve(import.meta.dir, '../..') });
     const window = new Window({ settings: { disableJavaScriptFileLoading: true, disableJavaScriptEvaluation: true } });
-    window.matchMedia = (() => ({ matches: true, addEventListener() {} })) as any;
+    // A desktop: wide-screen queries match, phone (max-width) ones do not.
+    window.matchMedia = ((query: string) => ({ matches: !query.includes('max-width'), addEventListener() {} })) as any;
     const html = ctx.fns.ui.layout({ main: 'Page' });
     const run = new Function('document', 'window', await Bun.file(resolve(import.meta.dir, '$script_workbench.js')).text());
     const mount = () => {
@@ -66,5 +67,22 @@ test('chat controls still work when browser storage is unavailable', async () =>
         expect(window.document.querySelector<HTMLElement>('.agent-panel')!.hidden).toBe(true);
         window.document.querySelector<HTMLButtonElement>('[data-agent-open]')!.click();
         expect(window.document.querySelector<HTMLElement>('.agent-panel')!.hidden).toBe(false);
+    } finally { await window.happyDOM.close(); }
+});
+
+test('on a phone the chat starts closed and does not overwrite the desktop preference', async () => {
+    const ctx = await testCtx({ root: resolve(import.meta.dir, '../..') });
+    const window = new Window({ settings: { disableJavaScriptFileLoading: true, disableJavaScriptEvaluation: true } });
+    window.matchMedia = ((query: string) => ({ matches: query.includes('max-width'), addEventListener() {} })) as any;
+    window.localStorage.setItem('bot.chat.layout', JSON.stringify({ width: 420, collapsed: false }));
+    try {
+        window.document.body.innerHTML = ctx.fns.ui.layout({ main: 'Page' });
+        expect(window.document.querySelector('.bot-mobilebar [data-nav-toggle]')).not.toBeNull();
+        new Function('document', 'window', await Bun.file(resolve(import.meta.dir, '$script_workbench.js')).text())(window.document, window);
+        const panel = window.document.querySelector<HTMLElement>('.agent-panel')!;
+        expect(panel.hidden).toBe(true);
+        window.document.querySelector<HTMLButtonElement>('[data-agent-open]')!.click();
+        expect(panel.hidden).toBe(false);
+        expect(JSON.parse(window.localStorage.getItem('bot.chat.layout')!)).toEqual({ width: 420, collapsed: false });
     } finally { await window.happyDOM.close(); }
 });

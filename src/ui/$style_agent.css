@@ -30,9 +30,24 @@
     .agent-rail { justify-content: flex-end; padding: 4px 8px; border-left: 0; }
     .agent-rail > button { flex-direction: row; }
 }
+/* Phones: a top bar with the menu button, the sidebar as a drawer, Pi as a
+   floating button that opens the chat full screen (drawer.js, workbench.js). */
+.bot-mobilebar, .bot-nav-backdrop { display: none; }
 @media (max-width: 800px) {
     .bot-workbench { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-    .bot-workbench > .asx-side-nav { width: 100%; height: auto; max-height: 24dvh; border-right: 0; border-bottom: 1px solid var(--color-asx-border); }
+    .bot-mobilebar { display: flex; align-items: center; gap: var(--asx-space-2); min-height: 48px; padding: 0 var(--asx-space-2); border-bottom: 1px solid var(--color-asx-border); background: var(--color-asx-background-surface); }
+    .bot-mobilebar strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bot-workbench > .asx-side-nav { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: min(300px, 85vw); height: 100dvh; transform: translateX(-100%); transition: transform var(--asx-duration-fast, .15s) ease; }
+    .bot-workbench[data-nav-open="true"] > .asx-side-nav { transform: none; box-shadow: var(--asx-shadow-med); }
+    .bot-workbench[data-nav-open="true"] > .bot-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(10, 19, 23, .36); }
+    .bot-workspace main { padding: var(--asx-space-4) var(--asx-space-4) 88px; }
+    .bot-workspace.asx-resizable, .bot-workspace[data-chat-collapsed="true"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .bot-workspace > .asx-resizable__end { position: fixed; inset: 0; z-index: 70; height: 100dvh; border-top: 0; }
+    .bot-workspace[data-chat-collapsed="true"] > .asx-resizable__end { inset: auto; right: var(--asx-space-4); bottom: max(var(--asx-space-4), env(safe-area-inset-bottom)); height: auto; overflow: visible; background: transparent; }
+    .agent-rail { height: auto; padding: 0; border: 1px solid var(--color-asx-border); border-radius: 999px; background: var(--color-asx-background-surface); box-shadow: var(--asx-shadow-med); }
+    .agent-rail > button { min-height: 44px; padding: 0 var(--asx-space-4); }
+    /* iOS zooms the page into any field with text under 16px. */
+    .bot-workbench input:not([type="checkbox"]):not([type="radio"]), .bot-workbench textarea, .bot-workbench select { font-size: 16px; }
 }
 /* Chat prose, not literal Markdown. Keep long code/tables inside the pane. */
 .agent-panel .asx-chat-message-bubble__body.asx-markdown { white-space: normal; min-width: 0; overflow-wrap: anywhere; }

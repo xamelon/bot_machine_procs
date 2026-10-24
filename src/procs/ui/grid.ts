@@ -3,5 +3,7 @@ export default function (ctx: Context, _session: Session | null, opts: {
 }) {
     const esc = (s: any) => ctx.fns.procs.ui.escape({ text: s });
     const cols = typeof opts.columns === "number" ? `repeat(${opts.columns}, minmax(0, 1fr))` : opts.columns ?? "repeat(auto-fit, minmax(180px, 1fr))";
-    return `<div class="asx-grid ${esc(opts.class ?? "")}" data-gap="${esc(opts.gap ?? 3)}" style="grid-template-columns:${esc(cols)}">${opts.body}</div>`;
+    // Fixed columns stack into one on a narrow screen (core css); auto-fit adapts by itself.
+    const stack = /auto-(fit|fill)/.test(cols) ? "" : " data-stack";
+    return `<div class="asx-grid ${esc(opts.class ?? "")}" data-gap="${esc(opts.gap ?? 3)}"${stack} style="--asx-grid-columns:${esc(cols)}">${opts.body}</div>`;
 }

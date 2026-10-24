@@ -37,7 +37,11 @@ export default function (ctx: Context, session: Session | null, opts: { title?: 
     const workspace = agent
         ? ui.resizable({ class: "bot-workspace", initial: 70, min: 35, max: 85, start: main, end: `${panel}<div class="agent-rail" hidden>${reopen}</div>` })
         : `<div class="bot-workspace bot-workspace--solo">${main}</div>`;
-    const scripts = agent ? `<script src="/ui/agent.js" defer></script><script src="/ui/workbench.js" defer></script>` : "";
+    const scripts = `<script src="/ui/drawer.js" defer></script>${agent ? `<script src="/ui/agent.js" defer></script><script src="/ui/workbench.js" defer></script>` : ""}`;
+    // Phones: the sidebar becomes a drawer behind this bar (drawer.js). The bar
+    // and backdrop are display:none on wider screens.
+    const menu = ui.button({ label: "Menu", icon: "ph-list", variant: "ghost", size: "sm" }).replace("<button", '<button data-nav-toggle aria-expanded="false"');
+    const bar = `<header class="bot-mobilebar">${menu}<strong data-nav-current>Bot</strong></header><div class="bot-nav-backdrop" data-nav-close></div>`;
     const html = ui.layout({ ...opts, headExtra: `${opts.headExtra ?? ""}<meta name="bot-live-revision" content="${ctx.state.procs.events?.revision ?? 0}"><link rel="preload" href="/ui/phosphor.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/ui/phosphor.css"><link rel="stylesheet" href="/ui/agent.css">${scripts}<script src="/ui/live.js" defer></script>` });
-    return html.replace(main, () => `<div class="bot-workbench">${nav}${workspace}</div>`);
+    return html.replace(main, () => `<div class="bot-workbench">${bar}${nav}${workspace}</div>`);
 }

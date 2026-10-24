@@ -10,12 +10,16 @@
     const scroll = panel.querySelector('.asx-chat-layout');
     let scrollTop = 0, followBottom = true;
     const desktop = window.matchMedia('(min-width: 1101px)');
+    // On a phone the chat is a full-screen layer: closed on every page load, and
+    // opening/closing it there does not overwrite the desktop preference.
+    const phone = window.matchMedia('(max-width: 800px)');
     const key = 'bot.chat.layout';
     let saved = {};
     try { saved = JSON.parse(window.localStorage.getItem(key) || '{}') || {}; } catch {}
     let width = Number.isFinite(saved.width) && saved.width > 0 ? saved.width : 380;
     let available = 0;
     function persist() {
+        if (phone.matches) return;
         try { window.localStorage.setItem(key, JSON.stringify({ width, collapsed: root.dataset.chatCollapsed === 'true' })); } catch {}
     }
     function layout() {
@@ -56,7 +60,7 @@
     handle.setAttribute('aria-label', 'Resize chat');
     handle.setAttribute('aria-controls', 'main coding-agent');
     layout();
-    setCollapsed(saved.collapsed === true);
+    setCollapsed(phone.matches || saved.collapsed === true);
     collapse.addEventListener('click', () => { setCollapsed(true, true); persist(); });
     open.addEventListener('click', () => { setCollapsed(false, true); persist(); });
     root.addEventListener('asx:resize', () => { rememberWidth(); persist(); });
