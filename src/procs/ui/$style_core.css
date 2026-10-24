@@ -244,6 +244,17 @@
 .asx-table tbody tr:hover { background: var(--color-asx-overlay-hover); }
 .asx-table tbody tr[data-href] { cursor: pointer; }
 .asx-table [data-wrap="true"] { white-space: normal; }
+.asx-table th.asx-table__toggle-head, .asx-table td.asx-table__toggle { width: 1%; padding-left: 0; text-align: right; }
+.asx-table__expand { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 0; border-radius: var(--asx-radius-element); background: transparent; color: var(--color-asx-text-secondary); cursor: pointer; }
+.asx-table__expand:hover { background: var(--color-asx-overlay-hover); color: var(--color-asx-text-primary); }
+.asx-table__expand:focus-visible { outline: 2px solid var(--color-asx-accent); outline-offset: 1px; }
+.asx-table__expand i { transition: transform .15s ease; }
+.asx-table__expand[aria-expanded="true"] i { transform: rotate(90deg); }
+.asx-table tr[data-open="true"] { background: var(--color-asx-overlay-hover); }
+.asx-table tr.asx-table__detail[hidden] { display: none; }
+.asx-table tr.asx-table__detail > td { padding: var(--asx-space-3); background: var(--color-asx-background-muted); border-bottom: var(--asx-border-width) solid var(--color-asx-border); }
+.asx-table tr.asx-table__detail:hover { background: none; }
+.asx-table tr.asx-table__detail .asx-code-block { border: 0; background: transparent; padding: 0; max-height: 40vh; overflow: auto; white-space: pre; }
 
 .asx-list { display: grid; gap: var(--asx-space-1); margin: 0; padding: 0; list-style: none; }
 .asx-list__item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--asx-space-3); min-height: var(--asx-size-lg); border-radius: var(--asx-radius-element); padding: var(--asx-space-2); color: var(--color-asx-text-primary); }
