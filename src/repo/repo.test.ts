@@ -115,6 +115,16 @@ test("a commit without a configured identity is the signed-in operator's", async
     expect(run(app, "log", "-1", "--format=%an <%ae>")).toBe("Anna <anna@bot.local>");
 });
 
+test("REPO_ROOT names the checkout when the app runs from elsewhere (Docker: /app)", async () => {
+    const docker = await testCtx({ env: { REPO_ROOT: app } });
+    try {
+        expect(docker.fns.repo.root({})).toBe(app);
+        const status = await docker.fns.repo.status({});
+        expect(status.repo && status.root).toBe(app);
+        expect(docker.fns.repo.keyPath({})).toBe(join(app, ".runtime/git/id_ed25519"));
+    } finally { docker.fns.procs.db.close({}); }
+});
+
 test("a folder that is not a checkout of its own is refused", async () => {
     const inner = join(app, "src");
     const other = await testCtx();

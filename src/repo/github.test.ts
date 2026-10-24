@@ -145,7 +145,7 @@ test("a bad name keeps the sign-in for another try; cancel and expiry forget it"
 });
 
 test("without an OAuth App the page offers the manual way only", async () => {
-    const bare = await testCtx();
+    const bare = await testCtx({ env: { GITHUB_CLIENT_ID: "" } });
     try {
         bare.state.repo = { root: app };
         run(app, "remote", "remove", "origin");
