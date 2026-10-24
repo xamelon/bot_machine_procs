@@ -97,6 +97,10 @@ test("the prompt states which tools exist, and what they are for", async () => {
         expect(onText).toContain("no shell tool");
         expect(onText).toContain("SYNCHRONOUS");
         expect(onText).toContain("pragma table_info");
+        // Git goes through the checkout, which in Docker is not the app folder.
+        expect(onText).toContain("ctx.fns.repo.commit({ message })");
+        expect(onText).toContain("/app has no .git");
+        expect(offText).not.toContain("ctx.fns.repo.commit");
     } finally {
         if (previous === undefined) delete process.env.AGENT_REPL; else process.env.AGENT_REPL = previous;
         await rm(root, { recursive: true, force: true });
