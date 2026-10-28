@@ -4,6 +4,10 @@ Shared bot core: procs framework, Astryx UI, base admin (channels, users, flows,
 broadcasts, inbox), platform adapters, agent panel and supervisor.
 Specific bots' modules, configuration, databases and secrets belong to their host repos.
 
+## Start a new bot with Docker
+
+Copy [examples/new-bot](examples/new-bot/README.md) into your bot repository. It includes compose.yaml, package.json, environment defaults and a sample page. The core comes from a versioned GHCR image; the app is mounted at `/app`, with no submodule or custom bootstrap.
+
 ## Use as a submodule
 
 ```sh
@@ -22,7 +26,7 @@ await boot({ root: resolve(import.meta.dir, "..") });
 
 Host package.json scripts: `start: bun procs/supervisor/start.ts`,
 `start:runtime: bun 'src/$main.ts'`. Run from the host root so its `.env` applies.
-The supervisor launches host `src/$main.ts`, not core's standalone entrypoint.
+The supervisor launches the core's `src/$main.ts` with the host root in `APP_ROOT`; the host bootstrap is only needed for direct legacy runtime commands.
 
 Host `procs.prod` supplies lifecycle order and configuration, for example:
 

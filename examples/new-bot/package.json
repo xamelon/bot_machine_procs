@@ -1,0 +1,16 @@
+{
+  "name": "my-bot",
+  "private": true,
+  "type": "module",
+  "procs": {
+    "prod": {
+      "procs/log": {},
+      "procs/db": { "url": ".runtime/bot.sqlite" },
+      "procs/migrate": {},
+      "bot": {},
+      "procs/repl": {},
+      "procs/styles": {},
+      "procs/http": { "port": 4100 }
+    }
+  }
+}
