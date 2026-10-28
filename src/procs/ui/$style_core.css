@@ -942,6 +942,9 @@
 .asx-button-group[data-orientation="vertical"] .asx-button:first-child { border-top-left-radius: var(--asx-radius-element); border-top-right-radius: var(--asx-radius-element); }
 .asx-button-group[data-orientation="vertical"] .asx-button:last-child { border-bottom-left-radius: var(--asx-radius-element); border-bottom-right-radius: var(--asx-radius-element); }
 .asx-input-group { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; width: min(100%, 28rem); border: var(--asx-border-width) solid var(--color-asx-border); border-radius: var(--asx-radius-element); background: var(--color-asx-background-surface); overflow: hidden; }
+.asx-input-group > :not(.asx-input-group__addon) { grid-column: 2; grid-row: 1; min-width: 0; }
+.asx-input-group > .asx-input-group__addon:first-child { grid-column: 1; grid-row: 1; }
+.asx-input-group > .asx-input-group__addon:last-child { grid-column: 3; grid-row: 1; }
 .asx-input-group:focus-within { border-color: var(--color-asx-accent); box-shadow: inset 0 0 0 2px var(--color-asx-accent-muted); }
 .asx-input-group .asx-input { width: 100%; border: 0; box-shadow: none !important; border-radius: 0; }
 .asx-input-group__addon { display: inline-flex; align-items: center; min-height: var(--asx-size-md); padding: 0 var(--asx-space-2); color: var(--color-asx-text-secondary); background: var(--color-asx-background-muted); font-size: var(--asx-text-body-size); }

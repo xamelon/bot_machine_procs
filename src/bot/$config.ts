@@ -13,6 +13,7 @@ export default {
     retryMaxDelaySeconds: { type: "integer", default: 1800, env: "BOT_RETRY_MAX_DELAY_SECONDS" },
     retryGiveUpHours: { type: "integer", default: 24, env: "BOT_RETRY_GIVE_UP_HOURS" },
     publicBaseUrl: { type: "string", default: "", env: "PUBLIC_BASE_URL" },
+    webhookSecret: { type: "string", default: "", env: "WEBHOOK_SECRET" },
     // Whose clock and language `bot.formatDate` / `bot.date` speak: the audience's,
     // not the server's (Docker runs in UTC).
     timeZone: { type: "string", default: "Europe/Moscow", env: "BOT_TIMEZONE" },

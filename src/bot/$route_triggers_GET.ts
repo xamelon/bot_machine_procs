@@ -51,7 +51,7 @@ export default function (ctx: Context, session: Session | null, _opts: {}) {
         <div class="asx-trigger-form__actions">${ui.button({ label: "Create trigger", variant: "primary", type: "submit" })}</div>
     </form>` : ui.emptyState({ title: "No flows to trigger", body: "Create a flow first — a trigger names one." });
 
-    const main = `${notice ? ui.banner({ tone: tone as any, body: notice }) : ""}${disconnected(ctx, esc)}${ui.card({ title: "New trigger", description: "A trigger decides which flow starts when a message arrives.", body: form })}${ui.card({ body: table })}`;
+    const main = `${notice ? ui.banner({ tone: tone as any, body: notice }) : ""}${disconnected(ctx, esc)}${ui.card({ title: "New trigger", description: "A trigger decides which flow starts when a message arrives.", body: form })}${ui.card({ body: table })}${ctx.fns.bot.webhookPanel({})}`;
     return ctx.fns.bot.screen({ page: "bot-triggers", title: "Triggers", lead: "What starts a flow.", main });
 }
 

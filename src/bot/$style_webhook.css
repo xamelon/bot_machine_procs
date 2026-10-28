@@ -1,0 +1,14 @@
+.bot-webhook { margin-top: var(--asx-space-4); }
+.bot-webhook__params { min-width: 0; }
+.bot-webhook__params .asx-field__control-stack,
+.bot-webhook__params .asx-selector,
+.bot-webhook__params .asx-selector__trigger { min-width: 0; }
+.bot-webhook__params [data-asx-choice-label] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-webhook__url { margin-bottom: var(--asx-space-4); }
+.bot-webhook__url input { min-width: 0; width: 100%; }
+.bot-webhook__params details > .asx-trigger-form { margin-top: var(--asx-space-3); }
+.bot-webhook__code { min-width: 0; }
+.bot-webhook__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--asx-space-3); }
+.bot-webhook__code .asx-code-figure { margin: var(--asx-space-4) 0 0; }
+.bot-webhook__code .asx-code-block { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bot-webhook__code [role="status"] { display: block; min-height: 1.5em; margin-top: var(--asx-space-2); font-size: 0.875rem; }
