@@ -93,6 +93,7 @@ export async function bootRegistry(opts?: { root?: string }): Promise<Context> {
 }
 
 if (import.meta.main) {
-    const ctx = await boot();
+    // The image owns the entrypoint; the mounted app only supplies src + package.json.
+    const ctx = await boot({ root: process.env.APP_ROOT ? resolve(process.env.APP_ROOT) : undefined });
     (globalThis as any).ctx = ctx;
 }

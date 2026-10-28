@@ -1,10 +1,18 @@
 # Single-project host (prototype)
 
-Install dependencies in the app and in its `procs/` Git submodule (`bun install` in each). The submodule owns the framework and base bot admin; app-specific modules live in app `src/`.
+The core owns the framework, base bot admin and runtime entrypoint. An application supplies `src/`, `package.json` (dependencies and `procs.prod` configuration) and writable `.runtime/`. It needs neither its own `$main.ts` nor a core checkout in its source tree. Install dependencies in both the core and the app.
 
-Run from the app repository: `bun run start` (script points at `procs/supervisor/start.ts`).
+Run `APP_ROOT=/path/to/bot bun /path/to/bot_machine/supervisor/start.ts`. Without `APP_ROOT`, the current working directory is the application root; `bun run start` in the core still runs standalone. In a container, mount the bot at `/app` and set `APP_ROOT=/app`; keep the core outside that mount.
 
-The host never imports app code. It launches runtime (`APP_ROOT/src/$main.ts`) and Pi Durable as separate children, proxies HTTP, retries child crashes with backoff, and stops retrying after five unstable exits. SIGTERM shuts children down. There is no workspace provisioning or multi-project manager.
+The host never imports app code. It launches the core's `src/$main.ts` and Pi Durable as separate children with `APP_ROOT` and the application working directory. The core merges its own source with `APP_ROOT/src` and reads the application's configuration. The supervisor proxies HTTP, retries child crashes with backoff, and stops retrying after five unstable exits. SIGTERM shuts children down. There is no workspace provisioning or multi-project manager.
+
+## Container and agent source access
+
+Build the shared image from this repository: `docker build -t bot_machine:local .`. The image owns `/bot_machine`; mount the application at `/app` and keep `APP_ROOT=/app`. Set an explicit image version when publishing. Application dependencies belong in `/app/node_modules` (a Linux volume); run `bun install --frozen-lockfile` in `/app`, not in the core. With non-root users, ensure the app and dependency volume are writable by that UID/GID.
+
+GitHub Actions (`.github/workflows/docker.yaml`) builds Linux amd64 and arm64 images. Pull requests only build; pushes to `main` publish `ghcr.io/xamelon/bot_machine_procs:main`, `:latest` and `:sha-<full-commit>`. A tag such as `v1.2.3` publishes `:v1.2.3` plus its SHA tag. Pin a release tag or digest in production. Publishing uses the repository's `GITHUB_TOKEN` with `packages:write`, with no separate registry secret. The GHCR package may initially be private: set its visibility explicitly if anonymous pulls are required, or authenticate consumers with a token that can read packages. Non-root custom UID/GID builds remain a local build option; the published default image runs as root unless configured otherwise.
+
+Agent file tools expose app source as `src/` (editable) and the core checkout as virtual `core/` (read-only), including `core/src/procs/PROCS.md` and `core/supervisor/`. They do not expose core `.env*`, `.git`, `.runtime` or `node_modules`. Paths and symlink targets are checked before reads and writes. `core/` is a tool address, not a symlink inside the bot. REPL remains a separate, explicitly enabled arbitrary-code capability, not a filesystem sandbox.
 
 ## Browser
 

@@ -91,7 +91,7 @@ test("the prompt states which tools exist, and what they are for", async () => {
         // The whole framework is reachable there, and discovery beats guessing.
         expect(onText).toContain("Object.keys(ctx.fns)");
         expect(onText).toContain("ctx.fns.procs.dev.doc");
-        expect(onText).toContain("src/bot_machine/src/procs/PROCS.md");
+        expect(onText).toContain("core/src/procs/PROCS.md");
         // The runtime and its limits, so the model does not reach for a shell.
         expect(onText).toContain("Bun (1.3+), not Node");
         expect(onText).toContain("no shell tool");
