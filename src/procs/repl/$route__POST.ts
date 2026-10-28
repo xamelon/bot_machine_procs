@@ -9,10 +9,11 @@
 //                 cannot read a file, and it cannot sign one.
 //   loopback      the socket peer must be local and not forwarded, so nothing
 //                 reaches this from the network even with a leaked token.
-//   production    NODE_ENV=production → 403 even from localhost
+//   production    disabled unless AGENT_REPL=1 is explicitly set
 export default async function (ctx: Context, session: Session, opts: { req: Request }) {
     const env = ctx.env ?? {};
-    if (env.NODE_ENV === "production") return new Response("repl disabled", { status: 403 });
+    const config = ctx.fns.procs.config.resolve({ module: "procs/repl" });
+    if (env.NODE_ENV === "production" && config.agentRepl !== "1") return new Response("repl disabled", { status: 403 });
 
     // Loopback-only, and NOT through a proxy: a reverse proxy makes every request
     // look like 127.0.0.1, but always adds an `x-forwarded-*` header, so a
