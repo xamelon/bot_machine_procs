@@ -51,6 +51,7 @@
         if (!picker.disabled) addFiles([...(event.dataTransfer?.files || [])]);
     });
     let fingerprint = '';
+    let submitting = false;
     const markdownCache = new Map();
     async function formatMessages(content) {
         const texts = new Set(content.filter(item => item.role === 'assistant').map(item => item.text));
@@ -79,9 +80,15 @@
         if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
         return data;
     }
+    let latestState = null;
+    let rendering = false;
+    let renderAgain = false;
     async function refresh() {
+        if (submitting || !latestState) return;
+        if (rendering) { renderAgain = true; return; }
+        rendering = true;
         try {
-            const data = await api('state');
+            const data = latestState;
             const content = [];
             const tools = new Map();
             const textOf = value => typeof value === 'string' ? value : (Array.isArray(value) ? value.filter(c => c.type === 'text' || !c.type).map(c => c.text || '').filter(Boolean).join('\n') : '');
@@ -152,6 +159,7 @@
             if (live.compactionFailure) content.push({ role: 'error', text: 'Summary failed: ' + live.compactionFailure.error });
             if (active) content.push({ role: 'progress', text: 'Pi is working…' });
             await formatMessages(content);
+            if (submitting) return;
             const next = JSON.stringify(content);
             if (next !== fingerprint) {
                 const atBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight < 60;
@@ -222,17 +230,32 @@
                 fingerprint = next;
                 if (atBottom) scrollArea.scrollTop = scrollArea.scrollHeight;
             }
-        } catch (e) { status.textContent = 'Disconnected'; fail(e.message); if (stop) stop.hidden = true; }
+        } catch (e) { fail(e.message); }
+        finally {
+            rendering = false;
+            if (renderAgain) { renderAgain = false; void refresh(); }
+        }
     }
     form.addEventListener('submit', async e => {
         e.preventDefault();
         const input = form.elements.text;
         const picker = form.elements.attachments;
         const files = [...(picker?.files || [])];
-        if (!input.value.trim() && !files.length) return;
+        if (submitting || (!input.value.trim() && !files.length)) return;
         const button = form.querySelector('[type=submit]'); button.disabled = true; panel.dataset.agentBusy = 'true'; status.textContent = 'Submitting…'; fail('');
         // Retain the same id on uncertain transport failure; retry cannot duplicate admission.
         const text = input.value;
+        submitting = true;
+        messages.querySelector('[data-agent-pending]')?.remove();
+        const pending = panel.querySelector('[data-agent-message="user"]').content.firstElementChild.cloneNode(true);
+        pending.dataset.agentPending = 'true';
+        pending.querySelector('.asx-chat-message-bubble__body').textContent = [text, ...files.map(file => '📎 ' + file.name)].filter(Boolean).join('\n');
+        const pendingStatus = document.createElement('small');
+        pendingStatus.setAttribute('role', 'status'); pendingStatus.textContent = 'Sending…';
+        pending.append(pendingStatus);
+        if (!fingerprint || fingerprint === '[]') messages.replaceChildren();
+        messages.append(pending);
+        scrollArea.scrollTop = scrollArea.scrollHeight;
         try {
             if (files.length > 5 || files.reduce((n, file) => n + file.size, 0) > 10 * 1024 * 1024 || files.some(file => file.size > 5 * 1024 * 1024)) throw new Error('At most 5 files, 5 MB per file, 10 MB total');
             input.disabled = true; picker.disabled = true;
@@ -251,10 +274,13 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
             delete form.dataset.pendingText; delete form.dataset.requestId;
             if (stop) stop.hidden = false;
+            pendingStatus.textContent = 'Sent';
+            submitting = false;
+            fingerprint = ''; // Replace the optimistic bubble with committed history.
             await refresh(); scrollArea.scrollTop = scrollArea.scrollHeight;
         }
-        catch (e) { fail(e.message); }
-        finally { button.disabled = false; input.disabled = false; picker.disabled = false; }
+        catch (e) { pendingStatus.textContent = 'Not confirmed — retry sending'; fail(e.message); }
+        finally { submitting = false; button.disabled = false; input.disabled = false; picker.disabled = false; }
     });
     panel.querySelector('[name=stop]').addEventListener('click', async () => { try { await api('abort', {}); await refresh(); } catch (e) { fail(e.message); } });
     // Clearing drops the message log out of the context: the worker, the chosen
@@ -268,6 +294,21 @@
         catch (e) { fail(e.message); }
         finally { button.disabled = false; }
     });
-    async function loop() { await refresh(); setTimeout(loop, document.hidden ? 5000 : 1000); }
-    loop();
+    const stream = new document.defaultView.EventSource('/_agent/events');
+    stream.onmessage = event => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'snapshot') latestState = message;
+            else if (message.type === 'update' && latestState) {
+                const docs = { ...latestState.docs };
+                for (const [key, value] of Object.entries(message.docs)) {
+                    if (value === null) delete docs[key]; else docs[key] = value;
+                }
+                latestState = { ...latestState, entries: [...latestState.entries.slice(0, message.start), ...message.entries], docs };
+            } else if (message.type === 'metadata' && latestState) latestState = { ...latestState, ...message };
+            if (latestState) void refresh();
+        } catch (error) { fail(error.message); }
+    };
+    stream.onerror = () => { status.textContent = 'Reconnecting…'; };
+    document.defaultView.addEventListener('pagehide', () => stream.close(), { once: true });
 })();

@@ -8,6 +8,7 @@ import appTools from "./tools";
 import credentials from "./credentials";
 import auth from "./auth";
 import { inputContent } from "./attachments";
+import { agentEvents } from "./agent-events";
 
 const root = resolve(process.env.APP_ROOT!);
 await mkdir(resolve(root, ".runtime/agent"), { recursive: true });
@@ -38,13 +39,15 @@ const view = await conversation.viewState(context);
 if ((view.value.docs["pi.agent"] as any)?.instructions !== INSTRUCTIONS) await conversation.configure({ instructions: INSTRUCTIONS }, context);
 const selected = () => (view.value.docs["pi.agent"] as any)?.model ?? defaultModel;
 harness.resume();
+const events = agentEvents(view);
 
-Bun.serve({ hostname: "127.0.0.1", port: Number(process.env.PORT), async fetch(req) {
+Bun.serve({ hostname: "127.0.0.1", idleTimeout: 60, port: Number(process.env.PORT), async fetch(req) {
     if (req.headers.get("authorization") !== `Bearer ${process.env.CONTROL_TOKEN}`) return new Response("Forbidden", { status: 403 });
     const path = new URL(req.url).pathname;
     try {
         const authResponse = await providerAuth.handle(req);
         if (authResponse) return authResponse;
+        if (req.method === "GET" && path === "/events") return events.response(req, { configured: Boolean(await models.checkAuth(selected().provider)), provider: selected().provider, model: selected().modelId });
         if (req.method === "GET" && path === "/state") return Response.json({ ...view.value, configured: Boolean(await models.checkAuth(selected().provider)), provider: selected().provider, model: selected().modelId, tools: registry.snapshot().installed().flatMap((extension: any) => (extension.tools ?? []).map((tool: any) => tool.name)), sections: registry.snapshot().installed().flatMap((extension: any) => (extension.sections ?? []).map((section: any) => section.key)) });
         if (req.method === "POST" && path === "/model") {
             const body = await req.json();
@@ -80,6 +83,6 @@ Bun.serve({ hostname: "127.0.0.1", port: Number(process.env.PORT), async fetch(r
     } catch (e: any) { return Response.json({ error: e.message }, { status: 500 }); }
 } });
 harness.closed.then(end => { if (end.reason === "failed") process.exit(1); });
-async function stop() { providerAuth.cancel(); view.dispose(); await harness.close(context); process.exit(0); }
+async function stop() { providerAuth.cancel(); events.close(); view.dispose(); await harness.close(context); process.exit(0); }
 process.on("SIGTERM", stop);
 process.on("SIGINT", stop);

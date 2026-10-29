@@ -76,6 +76,11 @@ test("Pi client uses UI templates safely and preserves submit retry and stop", a
         return new window.Response(JSON.stringify(path === "submit" && calls.length === 1 ? { error: "Try again" } : {}), { status: calls.length === 1 ? 503 : 200 });
     }) as any;
     try {
+        window.EventSource = class {
+            onmessage: any;
+            constructor() { void window.fetch('/_agent/state').then(r => r.json()).then(data => this.onmessage?.({ data: JSON.stringify({ type: 'snapshot', ...data }) })); }
+            close() {}
+        } as any;
         window.document.write(ctx.fns.ui.layout({ main: "Page" }));
         const run = new Function("document", "fetch", "crypto", "Event", "setTimeout", agentScript);
         run(window.document, window.fetch, window.crypto, window.Event, window.setTimeout.bind(window));

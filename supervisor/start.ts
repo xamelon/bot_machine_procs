@@ -205,7 +205,7 @@ const server = Bun.serve({ hostname: process.env.SUPERVISOR_HOST || "127.0.0.1",
         else spawn("runtime", runtimeEntry);
         return Response.json({ ok: true });
     }
-    const agentRoutes: Record<string, string> = { "/_agent/state": "/state", "/_agent/submit": "/submit", "/_agent/abort": "/abort", "/_agent/reset": "/reset", "/_agent/auth": "/auth", "/_agent/auth/login": "/auth/login", "/_agent/auth/respond": "/auth/respond", "/_agent/auth/cancel": "/auth/cancel", "/_agent/auth/logout": "/auth/logout", "/_agent/model": "/model" };
+    const agentRoutes: Record<string, string> = { "/_agent/events": "/events", "/_agent/state": "/state", "/_agent/submit": "/submit", "/_agent/abort": "/abort", "/_agent/reset": "/reset", "/_agent/auth": "/auth", "/_agent/auth/login": "/auth/login", "/_agent/auth/respond": "/auth/respond", "/_agent/auth/cancel": "/auth/cancel", "/_agent/auth/logout": "/auth/logout", "/_agent/model": "/model" };
     const isAgent = url.pathname.startsWith("/_agent/");
     if (isAgent && !agentRoutes[url.pathname]) return new Response("Not found", { status: 404 });
     if (url.pathname.startsWith("/_control/")) return new Response("Not found", { status: 404 });

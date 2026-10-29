@@ -12,6 +12,11 @@ test("agent composer submits files without a prompt and renders native image mes
         return new window.Response(JSON.stringify({ configured: true, entries: [{ model: [{ role: "user", content: [{ type: "image", mimeType: "image/png", data: png }] }] }] }));
     }) as any;
     try {
+        window.EventSource = class {
+            onmessage: any;
+            constructor() { void window.fetch('/_agent/state').then(r => r.json()).then(data => this.onmessage?.({ data: JSON.stringify({ type: 'snapshot', ...data }) })); }
+            close() {}
+        } as any;
         window.document.write(ctx.fns.ui.layout({ main: "Example" }));
         const script = await Bun.file(import.meta.dir + "/$script_agent.js").text();
         new Function("document", "fetch", "crypto", "Event", "FileReader", "setTimeout", script)(window.document, window.fetch, window.crypto, window.Event, window.FileReader, window.setTimeout.bind(window));
