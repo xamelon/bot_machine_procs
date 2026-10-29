@@ -72,6 +72,27 @@ test('reload waits for submission and preserves uncertain-transport retry identi
     } finally { await first.window.happyDOM.close(); await second?.window.happyDOM.close(); }
 });
 
+test('file changes wait for confirmed agent idle and reload once after the run', async () => {
+    const page = browser();
+    try {
+        const panel = page.window.document.createElement('aside');
+        panel.className = 'agent-panel';
+        page.window.document.querySelector('.bot-workspace')!.append(panel);
+        page.install();
+        page.event({ type: 'reload', revision: 3 }); page.flush();
+        expect(page.reloads).toBe(0); // State has not arrived yet.
+        panel.dataset.agentBusy = 'true';
+        for (let revision = 4; revision < 12; revision++) {
+            page.event({ type: 'reload', revision }); page.flush();
+            expect(page.reloads).toBe(0);
+        }
+        panel.dataset.agentBusy = 'false'; page.flush();
+        expect(page.reloads).toBe(1);
+        page.event({ type: 'reload', revision: 12 }); page.flush();
+        expect(page.reloads).toBe(1);
+    } finally { await page.window.happyDOM.close(); }
+});
+
 test('reload revision is broadcast and included in reconnect hello and shell', async () => {
     const ctx = await testCtx({ root: resolve(import.meta.dir, '../..') });
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;

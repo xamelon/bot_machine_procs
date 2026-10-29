@@ -128,6 +128,7 @@
             for (const entry of data.entries || []) for (const model of entry.model || []) addMessage(model);
             const live = data.docs?.['pi.live'] || {};
             const active = Boolean(live.run);
+            panel.dataset.agentBusy = String(active);
             status.textContent = active ? 'Working…' : !data.configured ? 'Model not configured' : 'Ready';
             // Stop means "stop this run", so it exists only while one is running.
             if (stop) stop.hidden = !active;
@@ -229,7 +230,7 @@
         const picker = form.elements.attachments;
         const files = [...(picker?.files || [])];
         if (!input.value.trim() && !files.length) return;
-        const button = form.querySelector('[type=submit]'); button.disabled = true; status.textContent = 'Submitting…'; fail('');
+        const button = form.querySelector('[type=submit]'); button.disabled = true; panel.dataset.agentBusy = 'true'; status.textContent = 'Submitting…'; fail('');
         // Retain the same id on uncertain transport failure; retry cannot duplicate admission.
         const text = input.value;
         try {

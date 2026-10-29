@@ -32,9 +32,12 @@
     window.addEventListener('beforeunload', saveDraft);
     function reload() {
         timer = null;
-        // Do not interrupt a submission: allow its durable request ID/result to
-        // settle before navigating. Running agent tasks do not block refresh.
-        if (form?.querySelector('[type=submit]')?.disabled) {
+        // Keep the conversation and selected files alive while the agent edits.
+        // Server-side hot reload continues; navigation waits for one idle window.
+        const panel = root.querySelector('.agent-panel');
+        const agentBusy = panel && panel.dataset.agentBusy !== 'false';
+        const attachments = form?.elements.attachments?.files?.length;
+        if (agentBusy || attachments || form?.querySelector('[type=submit]')?.disabled) {
             timer = setTimeout(reload, 300);
             return;
         }
