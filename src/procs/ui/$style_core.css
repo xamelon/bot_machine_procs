@@ -874,6 +874,7 @@
 .asx-file-input[data-mode="dropzone"] .asx-file-input__drop { flex-direction: column; align-items: center; justify-content: center; height: auto; gap: var(--asx-space-2); border-style: dashed; padding-block: var(--asx-space-6); padding-inline: var(--asx-space-4); text-align: center; }
 .asx-file-input__drop:hover { box-shadow: var(--asx-shadow-inset-hover); }
 .asx-file-input:focus-within .asx-file-input__drop { border-color: var(--color-asx-accent); box-shadow: var(--asx-shadow-inset-selected); }
+.asx-file-input[data-dragging="true"] .asx-file-input__drop { border-color: var(--color-asx-accent); background: var(--color-asx-accent-muted); box-shadow: var(--asx-shadow-inset-selected); }
 
 .asx-stepper[data-orientation="horizontal"] { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; margin: 0; padding: 0; list-style: none; }
 .asx-stepper[data-orientation="vertical"] { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }

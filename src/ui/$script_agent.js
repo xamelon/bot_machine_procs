@@ -10,6 +10,46 @@
     const status = panel.querySelector('[data-agent-status]');
     const stop = panel.querySelector('[data-agent-stop]');
     const error = panel.querySelector('[data-agent-error]');
+    const picker = form.elements.attachments;
+    const attached = form.querySelector('[data-agent-attachments]');
+    let selectedFiles = [];
+    const showFiles = files => {
+        selectedFiles = files;
+        const transfer = new document.defaultView.DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        picker.files = transfer.files;
+        attached.replaceChildren();
+        attached.hidden = !files.length;
+        attached.closest('.asx-chat-composer__header').hidden = !files.length;
+        files.forEach((file, index) => {
+            const chip = panel.querySelector('[data-agent-attachment]').content.cloneNode(true);
+            const label = chip.querySelector('[data-agent-filename]');
+            label.textContent = file.name; label.title = file.name;
+            chip.querySelector('[data-agent-remove]').addEventListener('click', () => {
+                if (!picker.disabled) showFiles(selectedFiles.filter((_, i) => i !== index));
+            });
+            attached.append(chip);
+        });
+    };
+    const addFiles = files => {
+        const next = [...selectedFiles, ...files];
+        if (next.length > 5 || next.reduce((sum, file) => sum + file.size, 0) > 10 * 1024 * 1024 || next.some(file => file.size > 5 * 1024 * 1024)) {
+            fail('At most 5 files, 5 MB per file, 10 MB total');
+            showFiles(selectedFiles); return;
+        }
+        fail(''); showFiles(next);
+    };
+    form.querySelector('[data-agent-attach]').addEventListener('click', () => { if (!picker.disabled) picker.click(); });
+    picker.addEventListener('change', () => { if (picker.files.length) addFiles([...picker.files]); else showFiles([]); });
+    form.addEventListener('dragover', event => {
+        if (picker.disabled || ![...(event.dataTransfer?.types || [])].includes('Files')) return;
+        event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; form.dataset.dragging = 'true';
+    });
+    form.addEventListener('dragleave', event => { if (!form.contains(event.relatedTarget)) delete form.dataset.dragging; });
+    form.addEventListener('drop', event => {
+        event.preventDefault(); delete form.dataset.dragging;
+        if (!picker.disabled) addFiles([...(event.dataTransfer?.files || [])]);
+    });
     let fingerprint = '';
     const markdownCache = new Map();
     async function formatMessages(content) {
@@ -78,6 +118,8 @@
                         flush();
                         const item = toolCall(block.id, block.name);
                         argumentsOf(item, block.arguments);
+                    } else if (block.type === 'image') {
+                        flush(); content.push({ role: model.role, text: '', image: block });
                     } else if (block.type === 'text' || !block.type) text += block.text || '';
                 }
                 flush();
@@ -165,6 +207,13 @@
                         body.classList.add('asx-markdown');
                         body.innerHTML = item.html;
                     } else body.textContent = sender === 'system' ? (item.role === 'error' ? 'Error: ' : item.role === 'progress' ? '' : item.role + '\n') + item.text : item.text;
+                    if (item.image && ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(item.image.mimeType)) {
+                        const image = document.createElement('img');
+                        image.src = `data:${item.image.mimeType};base64,${item.image.data}`;
+                        image.alt = 'Attached image'; image.loading = 'lazy';
+                        image.style.maxWidth = '100%'; image.style.maxHeight = '320px';
+                        body.append(image);
+                    }
                     if (item.role === 'error') body.setAttribute('role', 'alert');
                     messages.append(node);
                 }
@@ -177,15 +226,34 @@
     form.addEventListener('submit', async e => {
         e.preventDefault();
         const input = form.elements.text;
-        if (!input.value.trim()) return;
+        const picker = form.elements.attachments;
+        const files = [...(picker?.files || [])];
+        if (!input.value.trim() && !files.length) return;
         const button = form.querySelector('[type=submit]'); button.disabled = true; status.textContent = 'Submitting…'; fail('');
         // Retain the same id on uncertain transport failure; retry cannot duplicate admission.
         const text = input.value;
-        const requestId = form.dataset.pendingText === text ? form.dataset.requestId : crypto.randomUUID();
-        form.dataset.pendingText = text; form.dataset.requestId = requestId;
-        try { await api('submit', { text, requestId }); input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })); delete form.dataset.pendingText; delete form.dataset.requestId; if (stop) stop.hidden = false; await refresh(); scrollArea.scrollTop = scrollArea.scrollHeight; }
+        try {
+            if (files.length > 5 || files.reduce((n, file) => n + file.size, 0) > 10 * 1024 * 1024 || files.some(file => file.size > 5 * 1024 * 1024)) throw new Error('At most 5 files, 5 MB per file, 10 MB total');
+            input.disabled = true; picker.disabled = true;
+            const attachments = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve({ name: file.name, mimeType: file.type || 'application/octet-stream', data: String(reader.result).split(',')[1] });
+                reader.onerror = () => reject(new Error('Cannot read ' + file.name));
+                reader.readAsDataURL(file);
+            })));
+            const signature = JSON.stringify({ text, attachments });
+            const requestId = form.dataset.pendingText === signature ? form.dataset.requestId : crypto.randomUUID();
+            form.dataset.pendingText = signature; form.dataset.requestId = requestId;
+            await api('submit', { text, attachments, requestId });
+            input.value = ''; picker.value = '';
+            picker.dispatchEvent(new Event('change', { bubbles: true }));
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            delete form.dataset.pendingText; delete form.dataset.requestId;
+            if (stop) stop.hidden = false;
+            await refresh(); scrollArea.scrollTop = scrollArea.scrollHeight;
+        }
         catch (e) { fail(e.message); }
-        finally { button.disabled = false; }
+        finally { button.disabled = false; input.disabled = false; picker.disabled = false; }
     });
     panel.querySelector('[name=stop]').addEventListener('click', async () => { try { await api('abort', {}); await refresh(); } catch (e) { fail(e.message); } });
     // Clearing drops the message log out of the context: the worker, the chosen

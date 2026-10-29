@@ -14,14 +14,19 @@ export default function (ctx: Context, session: Session | null, opts: { title?: 
         `<template data-agent-message="${sender}">${ui.chatMessage({ sender, author: sender === "user" ? "You" : "Pi", variant: sender === "assistant" ? "ghost" : "filled", body: "", avatar: "none" })}</template>`
     ).join("");
     const toolTemplate = `<template data-agent-tool>${ui.chatToolCalls({ batch: true, calls: [{ name: "", status: "pending" }] })}</template>`;
+    const attachmentTemplate = `<template data-agent-attachment>${ui.hStack({ body: '<span data-agent-filename></span>' + ui.iconButton({ label: "Remove attachment", icon: "ph-x", size: "sm" }).replace('<button', '<button data-agent-remove'), class: "agent-attachment" })}</template>`;
     const composer = ui.chatComposer({
         name: "text",
         input: ui.chatComposerInput({ name: "text", placeholder: "Describe a change…" })
-            .replace("<textarea", '<textarea id="agent-prompt" required'),
+            .replace("<textarea", '<textarea id="agent-prompt"'),
+        header: '<div data-agent-attachments hidden aria-label="Attached files"></div>',
+        footer: ui.iconButton({ label: "Attach files", icon: "ph-paperclip", size: "sm" }).replace('<button', '<button data-agent-attach title="Attach images or text files"') +
+            '<input type="file" name="attachments" multiple hidden accept="image/png,image/jpeg,image/gif,image/webp,text/*,.json,.jsonl,.xml,.yaml,.yml,.toml,.ts,.tsx,.js,.jsx,.sql,.py,.sh,.log,.csv,.md">',
         // Hidden until the agent is actually working: the client shows it from `pi.live.run`.
         actions: ui.button({ label: "Stop", name: "stop", size: "sm", variant: "ghost" }).replace("<button", "<button data-agent-stop hidden"),
         status: { type: "error", message: "" },
-    }).replace('class="asx-chat-composer__status"', 'data-agent-error role="alert" hidden class="asx-chat-composer__status"');
+    }).replace('class="asx-chat-composer__header"', 'class="asx-chat-composer__header" hidden')
+        .replace('class="asx-chat-composer__status"', 'data-agent-error role="alert" hidden class="asx-chat-composer__status"');
     const collapse = ui.button({ label: "Collapse chat", icon: "ph-caret-double-right", variant: "ghost", size: "sm", class: "agent-collapse" }).replace('<button', '<button data-agent-collapse aria-controls="coding-agent" aria-expanded="true" title="Collapse chat"');
     const clear = ui.button({ label: "Clear", icon: "ph-trash", variant: "ghost", size: "sm", class: "agent-clear" }).replace('<button', '<button data-agent-clear title="Clear the conversation (the old one is backed up)"');
     const reopen = ui.button({ label: "Chat", icon: "ph-chat-circle", variant: "ghost", size: "sm" }).replace('<button', '<button data-agent-open aria-controls="coding-agent" aria-expanded="false" aria-label="Open chat" title="Open chat"');
@@ -29,7 +34,7 @@ export default function (ctx: Context, session: Session | null, opts: { title?: 
         header: `<div class="agent-header"><strong>Pi</strong><span data-agent-status role="status">Connecting…</span>${ctx.fns.ui.providers()}${clear}<a href="/_control/">Recovery</a>${collapse}</div>`,
         body: ui.chatMessageList({ align: "top" }).replace('class="asx-chat-message-list__inner"', 'data-agent-messages aria-label="Conversation" class="asx-chat-message-list__inner"'),
         composer,
-    })}${templates}${toolTemplate}</aside>`;
+    })}${templates}${toolTemplate}${attachmentTemplate}</aside>`;
     const main = `<main id="main" class="asx-main">${opts.main}</main>`;
     // Pi edits the application, so only an admin gets the panel (the supervisor
     // refuses /_agent/* to everybody else anyway).

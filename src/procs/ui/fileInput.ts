@@ -9,7 +9,7 @@ export default function (ctx: Context, _session: Session | null, opts: {
     const mode = opts.mode ?? "input";
     const id = `asx-file-${Math.random().toString(36).slice(2)}`;
     const control = `<label class="asx-file-input ${esc(opts.label ? "" : (opts.class ?? ""))}" data-asx-file data-mode="${esc(mode)}">
-        <span class="asx-file-input__drop"><i class="ph ph-upload-simple" aria-hidden="true"></i><span data-asx-file-label>${opts.multiple ? "Choose files" : "Choose file"}</span></span>
+        <span class="asx-file-input__drop"><i class="ph ph-upload-simple" aria-hidden="true"></i><span data-asx-file-label>${mode === "dropzone" ? "Drop files here or choose files" : opts.multiple ? "Choose files" : "Choose file"}</span></span>
         <input id="${esc(id)}" type="file" name="${esc(opts.name)}"${opts.accept ? ` accept="${esc(opts.accept)}"` : ""}${opts.multiple ? " multiple" : ""}${opts.required ? " required" : ""}${opts.status?.type ? ` aria-invalid="${opts.status.type === "error" ? "true" : "false"}"` : ""}>
         <script src="${esc(src)}" defer></script>
     </label>`;

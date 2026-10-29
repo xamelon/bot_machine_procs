@@ -7,6 +7,7 @@ import { openNodeJsonlStorage } from "@earendil-works/pi-durable/storage/jsonl/n
 import appTools from "./tools";
 import credentials from "./credentials";
 import auth from "./auth";
+import { inputContent } from "./attachments";
 
 const root = resolve(process.env.APP_ROOT!);
 await mkdir(resolve(root, ".runtime/agent"), { recursive: true });
@@ -55,9 +56,13 @@ Bun.serve({ hostname: "127.0.0.1", port: Number(process.env.PORT), async fetch(r
         }
         if (req.method === "POST" && path === "/submit") {
             if (!await models.checkAuth(selected().provider)) return Response.json({ error: "Connect an LLM provider and select a model in Providers" }, { status: 503 });
-            const body = await req.json();
-            if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 32_000 || typeof body.requestId !== "string") return new Response("Invalid input", { status: 400 });
-            const submission = await conversation.submit({ type: "input", content: body.text, requestId: body.requestId }, context);
+            if (Number(req.headers.get("content-length")) > 15 * 1024 * 1024) return Response.json({ error: "Request too large" }, { status: 413 });
+            const raw = await req.text();
+            if (raw.length > 15 * 1024 * 1024) return Response.json({ error: "Request too large" }, { status: 413 });
+            let body: any, content: ReturnType<typeof inputContent>;
+            try { body = JSON.parse(raw); content = inputContent(body); }
+            catch (error: any) { return Response.json({ error: error.message }, { status: 400 }); }
+            const submission = await conversation.submit({ type: "input", content, requestId: body.requestId }, context);
             return Response.json({ id: submission.id }, { status: 202 });
         }
         if (req.method === "POST" && path === "/abort") { await conversation.abort(context); return Response.json({ ok: true }); }
