@@ -56,6 +56,10 @@ async function one(ctx: Context, event: any) {
         return;
     }
     const user = upsertUser(ctx, connectionId, input);
+    if (input.channel === 'vk') void ctx.fns.bot.fillUserName({ userId: user.id }).catch(() => {
+        // Profile lookup must never fail or retry the person's message.
+        ctx.fns.procs.log.warn({ event: 'bot.profile.failed', msg: 'VK profile lookup failed', userId: user.id });
+    });
     const session = active(ctx, connectionId, user.id);
     const forced = forcedFlow(ctx, connectionId, input);
     const trigger = forced?.trigger ?? findTrigger(ctx, connectionId, input);
