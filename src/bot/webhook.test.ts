@@ -1,3 +1,4 @@
+import senler from "./$route_public_senler_POST";
 import { test, expect } from "bun:test";
 import { testCtx } from "../$test";
 
@@ -56,4 +57,27 @@ test("Senler is disabled without a secret; request builder never leaks it", asyn
         expect(script.status).toBe(200);
         expect(await script.text()).toContain("YOUR_WEBHOOK_SECRET");
     } finally { ctx.fns.procs.db.close({}); enabled.fns.procs.db.close({}); }
+});
+
+test("Senler logs accepted and rejected requests without secrets or payloads", async () => {
+    const ctx = await testCtx({ env: { WEBHOOK_SECRET: "private-webhook-secret" } });
+    const logs: any[] = [];
+    const logged = { ...ctx, fns: { ...ctx.fns, bot: ctx.fns.bot, procs: { config: ctx.fns.procs.config, db: ctx.fns.procs.db, log: { info: (entry: any) => logs.push(entry), warn: (entry: any) => logs.push(entry) } } } } as any;
+    try {
+        ctx.fns.bot.saveConnection({ channel: "echo", name: "Logs", publicId: "hook-logs" });
+        ctx.fns.bot.save({ definition: { id: "logged-flow", start_node_id: "hello", nodes: [{ id: "hello", type: "message", text: "Hello" }] }, connections: ["hook-logs"] });
+        const post = (body: any) => senler(logged, null, { req: new Request("http://local/bot/public/senler", { method: "POST", body: JSON.stringify(body) }) });
+        await post({ secret: "wrong-secret", text: "private-payload" });
+        await post({ secret: "private-webhook-secret" });
+        await post({ secret: "private-webhook-secret", connection_id: "hook-logs", flow_slug: "logged-flow", vk_user_id: 42 });
+        const entries = logs.filter(entry => entry.event === "bot.webhook.senler");
+        expect(entries).toHaveLength(3);
+        expect(entries.map(entry => [entry.status, entry.ok])).toEqual([[401, false], [200, false], [200, true]]);
+        expect(entries[0].reason).toBe("Invalid webhook secret");
+        expect(entries[2].connectionId).toBeNumber();
+        expect(entries[2].flowId).toBeNumber();
+        expect(new Set(entries.map(entry => entry.requestId)).size).toBe(3);
+        const serialized = JSON.stringify(entries);
+        for (const value of ["private-webhook-secret", "wrong-secret", "private-payload", "vk_user_id"]) expect(serialized).not.toContain(value);
+    } finally { ctx.fns.procs.db.close({}); }
 });
