@@ -100,7 +100,7 @@ async function uploadFile(ctx: Context, connection: any, path: string, peerId: s
     if (upload.ok === false) return upload;
     const form = new FormData();
     form.append("photo", file);
-    const uploadedRes = await fetch(upload.response.upload_url, { method: "POST", body: form });
+    const uploadedRes = await ctx.fns.bot.mediaFetch({ url: upload.response.upload_url, init: { method: "POST", body: form } });
     const uploaded: any = await uploadedRes.json().catch(() => ({}));
     if (!uploadedRes.ok || !uploaded.hash) return { ok: false, error: "VK photo upload failed" };
     const saved = await vk(ctx, token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });
@@ -115,12 +115,12 @@ async function resolveAttachment(ctx: Context, token: string, peerId: string, at
     if (!attachment.url) return null;
     const upload = await vk(ctx, token, "photos.getMessagesUploadServer", { peer_id: String(peerId), v: API_VERSION });
     if (upload.ok === false) return upload;
-    const image = await fetch(attachment.url);
+    const image = await ctx.fns.bot.mediaFetch({ url: attachment.url });
     if (!image.ok) return { ok: false, error: `image fetch failed with HTTP ${image.status}`, retryAfter: 60 };
     const type = image.headers.get("content-type") || "image/jpeg";
     const form = new FormData();
     form.append("photo", new Blob([await image.arrayBuffer()], { type }), type.includes("png") ? "photo.png" : "photo.jpg");
-    const uploadedRes = await fetch(upload.response.upload_url, { method: "POST", body: form });
+    const uploadedRes = await ctx.fns.bot.mediaFetch({ url: upload.response.upload_url, init: { method: "POST", body: form } });
     const uploaded: any = await uploadedRes.json().catch(() => ({}));
     if (!uploadedRes.ok || !uploaded.hash) return { ok: false, error: "VK photo upload failed", retryAfter: 60 };
     const saved = await vk(ctx, token, "photos.saveMessagesPhoto", { server: String(uploaded.server), photo: uploaded.photo, hash: uploaded.hash, v: API_VERSION });

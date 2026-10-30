@@ -13,5 +13,6 @@ export default function (ctx: Context, _session: Session | null, opts: { input: 
               ON CONFLICT(idempotency_key) DO NOTHING`,
         params: [opts.connectionId, input.channel, String(input.external_id), key, JSON.stringify(input), now, now],
     }).changes === 1;
+    if (inserted) ctx.fns.bot.wake({ queue: 'inbox' });
     return { ok: true, idempotencyKey: key, inserted };
 }

@@ -4,14 +4,24 @@
 // https://dev.max.ru/docs/chatbots/bots-coding/prepare and /docs-api/methods/POST/messages
 // shortcut: in-flight sends need leases if multiple runtimes share this DB.
 export default async function (ctx: Context, _session: Session | null, opts: {
-    channel: 'telegram' | 'vk' | 'max'; url: string; init?: BunFetchRequestInit; recipient?: string;
+    channel: 'telegram' | 'vk' | 'max'; url: string; init?: BunFetchRequestInit; recipient?: string; priority?: 'background';
 }) {
     const config = ctx.fns.procs.config.resolve({ module: 'bot' });
+    const started = Date.now();
+    const timeout = AbortSignal.timeout(Math.max(1, config.requestTimeoutMs));
+    const signal = opts.init?.signal ? AbortSignal.any([opts.init.signal, timeout]) : timeout;
+    let requestedAt = started;
+    try {
     const interval = opts.channel === 'vk' ? Math.max(51, config.vkRequestMs)
         : opts.channel === 'max' ? Math.max(34, config.maxRequestMs) : Math.max(34, config.telegramRequestMs);
     const recipientInterval = opts.recipient === undefined ? 0 : opts.channel === 'telegram'
         ? opts.recipient.startsWith('-') ? 3100 : 1000 : opts.channel === 'max' ? 500 : 0;
     for (;;) {
+        signal.throwIfAborted();
+        if (opts.priority === 'background' && (ctx.state.bot?.processing || ctx.fns.bot.dueOutbox({ limit: 100 }).some((row: any) => row.channel === opts.channel))) {
+            await Bun.sleep(100);
+            continue;
+        }
         const wait = ctx.fns.procs.db.conn().transaction(() => {
             const now = Date.now();
             const platform = ctx.fns.procs.db.select({ sql: 'SELECT * FROM bot_platform_limits WHERE channel = ?', params: [opts.channel] })[0];
@@ -33,9 +43,10 @@ export default async function (ctx: Context, _session: Session | null, opts: {
             return 0;
         })();
         if (!wait) break;
-        await Bun.sleep(wait);
+        await Bun.sleep(Math.min(wait, 100));
     }
-    const response = await fetch(opts.url, opts.init);
+    requestedAt = Date.now();
+    const response = await fetch(opts.url, { ...opts.init, signal });
     const json: any = await response.clone().json().catch(() => ({}));
     const limited = response.status === 429 || (opts.channel === 'telegram' && json.error_code === 429)
         || (opts.channel === 'vk' && [6, 9, 29].includes(json.error?.error_code));
@@ -48,4 +59,7 @@ export default async function (ctx: Context, _session: Session | null, opts: {
         retryAfter = ctx.fns.bot.pausePlatform({ channel: opts.channel, retryAfter: delays.length ? Math.max(...delays) : undefined });
     }
     return { response, retryAfter };
+    } finally {
+        ctx.fns.procs.log.info({ event: 'bot.platform.request', channel: opts.channel, waitMs: requestedAt - started, durationMs: Date.now() - requestedAt, aborted: signal.aborted });
+    }
 }

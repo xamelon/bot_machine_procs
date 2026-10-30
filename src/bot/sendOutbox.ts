@@ -6,10 +6,18 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
     state.sending = true;
     let sent = 0, failed = 0, skipped = 0;
     try {
-        for (let i = 0; i < (opts?.limit ?? 20); i++) {
-            // Re-select after each attempt: a new platform/recipient pause must apply to the next row.
-            const message = ctx.fns.bot.pending({ limit: 1 })[0];
-            if (!message) break;
+        const config = ctx.fns.procs.config.resolve({ module: 'bot' });
+        const limit = opts?.limit ?? config.sendLimit;
+        if (!Number.isInteger(limit) || limit < 1) throw new Error('limit must be a positive integer');
+        let claimed = 0;
+        const busy = new Set<string>();
+        const lane = async () => {
+          while (claimed < limit) {
+            const message = ctx.fns.bot.dueOutbox({ limit }).find((row: any) => !busy.has(`${row.bot_channel_connection_id}:${row.external_id}`));
+            if (!message) return;
+            const key = `${message.bot_channel_connection_id}:${message.external_id}`;
+            busy.add(key); claimed++;
+            const started = Date.now();
             try {
                 const row = ctx.fns.procs.db.select({ sql: "SELECT * FROM bot_channel_connections WHERE id = ?", params: [message.bot_channel_connection_id] })[0];
                 const connection = row ? { ...row, credentials: JSON.parse(row.credentials || "{}"), config: JSON.parse(row.config || "{}") } : null;
@@ -27,10 +35,16 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
                 ctx.fns.bot.ack({ id: message.id, externalMessageId: result.externalMessageId });
                 sent++;
             } catch (error: any) {
+                if (error?.rateLimited) continue; // No API request was made; preserve the row and attempts.
                 failed++;
                 ctx.fns.bot.failOutbox({ id: message.id, error: String(error?.message ?? error), retryAfter: error?.retryAfter });
+            } finally {
+                busy.delete(key);
+                ctx.fns.procs.log.info({ event: 'bot.outbox.attempt', outboxId: message.id, channel: message.channel, connectionId: message.bot_channel_connection_id, queueMs: Math.max(0, started - Date.parse(message.created_at)), durationMs: Date.now() - started });
             }
         }
+        };
+        await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, config.outboxConcurrency)) }, lane));
         return { sent, failed, skipped };
     } finally {
         state.sending = false;

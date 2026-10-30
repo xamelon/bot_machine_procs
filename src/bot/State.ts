@@ -3,6 +3,8 @@ export type State = {
     processing?: boolean;
     sending?: boolean;
     recovered?: boolean;
+    workersEnabled?: boolean;
+    workers?: Partial<Record<'inbox' | 'outbox', { dirty: boolean; running: boolean; timer?: ReturnType<typeof setTimeout> }>>;
     profilePending?: Set<number>;
     profileRetry?: Map<number, number>;
     inboxTimer?: ReturnType<typeof setInterval>;

@@ -19,25 +19,35 @@ export default async function (ctx: Context, _session: Session | null, opts?: { 
 }
 
 async function drain(ctx: Context, limit: number) {
-    const now = new Date().toISOString();
-    const due = ctx.fns.procs.db.select({
-        sql: `SELECT * FROM bot_inbox_events
-              WHERE status IN ('pending', 'failed') AND (next_retry_at IS NULL OR next_retry_at <= ?)
-              ORDER BY id ASC LIMIT ?`,
-        params: [now, limit],
-    });
-    let processed = 0;
-    let failed = 0;
-    for (const event of due) {
-        try {
-            await one(ctx, event);
-            processed++;
-        } catch (err: any) {
-            fail(ctx, event, String(err?.message ?? err));
-            failed++;
+    const config = ctx.fns.procs.config.resolve({ module: 'bot' });
+    let claimed = 0, processed = 0, failed = 0;
+    const busy = new Set<string>();
+    const lane = async () => {
+        while (claimed < limit) {
+            const due = ctx.fns.procs.db.select({
+                sql: `SELECT i.* FROM bot_inbox_events i
+                    WHERE i.status IN ('pending', 'failed') AND (i.next_retry_at IS NULL OR i.next_retry_at <= ?)
+                    AND NOT EXISTS (SELECT 1 FROM bot_inbox_events older
+                        WHERE older.bot_channel_connection_id = i.bot_channel_connection_id AND older.external_id = i.external_id
+                        AND older.id < i.id AND older.status IN ('pending', 'failed', 'processing'))
+                    ORDER BY i.id LIMIT ?`,
+                params: [new Date().toISOString(), limit],
+            });
+            const event = due.find((row: any) => !busy.has(`${row.bot_channel_connection_id}:${row.external_id}`));
+            if (!event) return;
+            const key = `${event.bot_channel_connection_id}:${event.external_id}`;
+            busy.add(key); claimed++;
+            const started = Date.now();
+            try { await one(ctx, event); processed++; }
+            catch (err: any) { fail(ctx, event, String(err?.message ?? err)); failed++; }
+            finally {
+                busy.delete(key);
+                ctx.fns.procs.log.info({ event: 'bot.inbox.processed', inboxId: event.id, connectionId: event.bot_channel_connection_id, queueMs: Math.max(0, started - Date.parse(event.created_at)), durationMs: Date.now() - started });
+            }
         }
-    }
-    return { processed, failed, more: due.length === limit };
+    };
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, config.inboxConcurrency)) }, lane));
+    return { processed, failed, more: claimed === limit };
 }
 
 async function one(ctx: Context, event: any) {
@@ -84,6 +94,7 @@ async function one(ctx: Context, event: any) {
         result.outputs.forEach((output: any, index: number) => saveOutbox(ctx, connectionId, output, `${event.idempotency_key}:out:${index}`));
         markProcessed(ctx, event.id);
     })();
+    if (result.outputs.length) ctx.fns.bot.wake({ queue: 'outbox' });
 }
 
 function upsertUser(ctx: Context, connectionId: number, input: any) {

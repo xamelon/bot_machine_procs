@@ -20,7 +20,7 @@ export default async function (ctx: Context, _session: Session | null, opts: { u
     if (retry.size >= 1000) retry.delete(retry.keys().next().value!);
     retry.set(opts.userId, now + 5 * 60_000);
     try {
-        const { response } = await ctx.fns.bot.platformFetch({ channel: 'vk', url: 'https://api.vk.com/method/users.get', init: {
+        const { response } = await ctx.fns.bot.platformFetch({ channel: 'vk', priority: 'background', url: 'https://api.vk.com/method/users.get', init: {
             method: 'POST', signal: AbortSignal.timeout(5000),
             headers: { authorization: `Bearer ${token}`, 'content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ user_ids: row.external_id, v: '5.199' }),
