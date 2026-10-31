@@ -1,8 +1,9 @@
-export default function (ctx: Context, _session: Session | null) {
+export default function (ctx: Context, session: Session | null) {
     const filters = ctx.fns.bot.filterBar({ subject: "events", href: "/bot/events" });
+    const paging = ctx.fns.bot.listPage({ from: 'bot_events e', where: filters.applied.where, params: filters.applied.params, href: '/bot/events' });
     const rows = filters.applied.ok ? ctx.fns.procs.db.select({
-        sql: `SELECT id, flow_id, node_id, event_type, created_at FROM bot_events e WHERE ${filters.applied.where} ORDER BY e.id DESC LIMIT 200`,
-        params: filters.applied.params,
+        sql: `SELECT id, flow_id, node_id, event_type, created_at FROM bot_events e WHERE ${filters.applied.where} ORDER BY e.id DESC LIMIT ? OFFSET ?`,
+        params: [...filters.applied.params, paging.size, paging.offset],
     }) : [];
-    return ctx.fns.bot.screen({ page: "bot-events", title: "Events", lead: "What the runtime recorded.", main: `${filters.error ? ctx.fns.procs.ui.banner({ tone: "error", body: filters.error }) : ""}${filters.bar}${ctx.fns.procs.ui.card({ body: ctx.fns.procs.ui.table({ columns: [{ key: "created_at", label: "At", render: (row) => ctx.fns.bot.date({ value: row.created_at }) }, { key: "event_type", label: "Event" }, { key: "flow_id", label: "Flow" }, { key: "node_id", label: "Node" }], rows, empty: "No events" }) })}` });
+    return ctx.fns.bot.screen({ page: "bot-events", title: "Events", lead: "What the runtime recorded.", main: `${filters.error ? ctx.fns.procs.ui.banner({ tone: "error", body: filters.error }) : ""}${filters.bar}${ctx.fns.procs.ui.card({ body: ctx.fns.procs.ui.table({ columns: [{ key: "created_at", label: "At", render: (row) => ctx.fns.bot.date({ value: row.created_at }) }, { key: "event_type", label: "Event" }, { key: "flow_id", label: "Flow" }, { key: "node_id", label: "Node" }], rows, empty: "No events" }) + paging.pager })}` });
 }

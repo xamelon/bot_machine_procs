@@ -738,7 +738,7 @@
 .asx-radio__mark { width: 18px; height: 18px; margin-top: 1px; border: var(--asx-border-width) solid var(--color-asx-border-emphasized); border-radius: 50%; background: var(--color-asx-background-surface); box-shadow: inset 0 0 0 4px var(--color-asx-background-surface); }
 .asx-radio input:checked + .asx-radio__mark { border-color: var(--color-asx-accent); background: var(--color-asx-accent); }
 
-.asx-pagination { display: inline-flex; align-items: center; gap: var(--asx-space-1); }
+.asx-pagination { display: flex; align-items: center; justify-content: center; width: 100%; gap: var(--asx-space-2); padding-block: var(--asx-space-4); }
 .asx-pagination__item { display: inline-flex; align-items: center; justify-content: center; min-width: var(--asx-size-md); height: var(--asx-size-md); border-radius: var(--asx-radius-element); color: var(--color-asx-text-primary); text-decoration: none; font-size: var(--asx-text-label-size); line-height: var(--asx-text-label-leading); font-weight: var(--asx-font-weight-medium); }
 .asx-pagination__item:hover:not([aria-disabled="true"]):not([data-current="true"]) { background: var(--color-asx-overlay-hover); }
 .asx-pagination__item[data-current="true"] { background: var(--color-asx-neutral); }
