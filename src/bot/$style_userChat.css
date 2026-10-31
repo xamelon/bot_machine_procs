@@ -1,0 +1,4 @@
+[data-user-chat] { display: flex; flex-direction: column; height: 65dvh; min-height: 0; overflow: hidden; }
+[data-user-chat] > [data-chat-scroll] { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; }
+[data-user-chat] > [data-chat-loading] { flex: none; font-size: var(--asx-text-supporting-size); color: var(--color-asx-text-secondary); }
+[data-user-chat] > form { flex: none; padding: var(--asx-space-3); border-top: 1px solid var(--color-asx-border); }
